@@ -1,10 +1,6 @@
-import { Model } from "sequelize";
-
-module.exports = (sequelize, DataTypes) => {
-  class User extends Model {
-   
-  }
-  User.init({
+const { DataTypes } = require('sequelize');
+import sequelize from '../database/connectDb';
+const Users = sequelize.define('rtc_users',{
     id:{
         type: DataTypes.INTEGER,
         autoIncrement: true,
@@ -78,9 +74,5 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DATE,
         allowNull:false
     }
-  }, {
-    sequelize,
-    modelName: 'User',
-  });
-  return User;
-};
+});
+module.exports = Users;
