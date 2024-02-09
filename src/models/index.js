@@ -1,17 +1,13 @@
-import fs from 'fs'
-import path from 'path';
-import { Sequelize } from 'sequelize';
-import process from 'process';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const fs = require('fs');
+const path = require('path');
+const Sequelize = require('sequelize');
+const process = require('process');
 
 const basename = path.basename(__filename);
 const env = process.env.NODE_ENV || 'development';
 
-const config = require(__dirname + '/../config/config.js')[env];
+const config = require(__dirname + '/../database/config.js')[env];
 
 const db = {};
 
@@ -46,4 +42,4 @@ Object.keys(db).forEach(modelName => {
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
-export default db
+module.exports = db;
