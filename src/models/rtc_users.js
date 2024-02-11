@@ -8,6 +8,7 @@ const Users = sequelize.define('rtc_users',{
     },
     created_at:{
         type: DataTypes.DATE,
+        defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
         allowNull:false
     },
     status:{
@@ -72,6 +73,7 @@ const Users = sequelize.define('rtc_users',{
     },
     last_update_at:{
         type: DataTypes.DATE,
+        defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
         allowNull:false
     }
 });
