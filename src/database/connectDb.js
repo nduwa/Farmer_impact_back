@@ -1,12 +1,14 @@
 
-import db from "../models/index.js";
-const connectDb = async () => {
-  try {
-    await db.sequelize.authenticate();
-    console.log("db connected successful");
-  } catch (error) {
-    console.log("db connection failed", error.message);
-  }
-};
+const Sequelize = require('sequelize');
+const { DataType } = Sequelize; 
 
-export default connectDb;
+const sequelize = new Sequelize('farmerim_rtc','root','',{
+    host: 'localhost',
+    dialect: 'mysql',
+    define:{
+        freezeTableName:true,
+        timestamps: false
+    }
+});
+
+module.exports = sequelize;

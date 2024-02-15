@@ -1,16 +1,20 @@
-import { Model } from "sequelize";
+const { DataTypes } = require('sequelize');
+import sequelize from '../database/connectDb';
 
-module.exports = (sequelize, DataTypes) => {
-  class Bucket extends Model {
-   
-  }
-  Bucket.init({
+const Bucket = sequelize.define('bucketing',{
     id:{
         type: DataTypes.INTEGER,
         autoIncrement: true,
         primaryKey: true
     },
-   
+    created_at:{
+        type: DataTypes.DATE,
+        allowNull:false
+    },
+    created_by:{
+        type: DataTypes.INTEGER,
+        allowNull:false
+    },
     _kf_Supplier:{
         type: DataTypes.STRING,
         allowNull: false
@@ -46,18 +50,6 @@ module.exports = (sequelize, DataTypes) => {
     certification:{
         type: DataTypes.STRING,
         allowNull:false
-    },
-    created_at:{
-        type: DataTypes.DATE,
-        allowNull:false
-    },
-    created_by:{
-        type: DataTypes.INTEGER,
-        allowNull:false
-    },
-  }, {
-    sequelize,
-    modelName: 'Bucket',
-  });
-  return Bucket;
-};
+    }
+});
+module.exports = Bucket;
