@@ -2,6 +2,8 @@ import { Op } from "sequelize";
 import Users from "../models/rtc_users";
 import userValidationSchema from "../validations/userValidations";
 import bcrypt from "bcrypt";
+import Jwt from "jsonwebtoken";
+import { generateRandomString } from "../helpers/randomStringGenerator";
 
 class UserController {
   //user creation/signup/adding or registering a user
@@ -9,7 +11,7 @@ class UserController {
     try {
       //   user validation
 
-      // console.log(req.body);
+      console.log(req.body);
       const { error } = userValidationSchema.validate(req.body);
 
       if (error)
@@ -20,10 +22,10 @@ class UserController {
 
       const checkduplicatedEmail = await Users.findOne({
         where: {
-          [Op.or]: [{ Email: req.body.email }, { Phone: req.body.Phone }],
+          [Op.or]: [{ Email: req.body.Email }, { Phone: req.body.Phone }],
         },
       });
-      // console.log(checkduplicatedEmail);
+      console.log(checkduplicatedEmail);
       if (checkduplicatedEmail) {
         return res.status(400).json({
           status: "fail",
@@ -32,11 +34,15 @@ class UserController {
       }
 
       const hashedPassword = await bcrypt.hash(req.body.password, 10);
+      const __kp_User = generateRandomString(32);
+      const _kf_Location = generateRandomString(32);
+      console.log("__kp_User:", __kp_User);
+      console.log("_kf_Location:", _kf_Location);
 
       const user = new Users({
         status: 0,
-        __kp_User: req.body.__kp_User,
-        _kf_Location: req.body._kf_Location,
+        __kp_User: __kp_User,
+        _kf_Location: _kf_Location,
         Name_Full: req.body.Name_Full,
         Name_User: req.body.Name_User,
         Role: req.body.Role,
@@ -46,7 +52,7 @@ class UserController {
         z_recModifyTimestamp: req.body.z_recModifyTimestamp,
         Phone: req.body.Phone,
         Phone_Airtime: req.body.Phone_Airtime,
-        Email: req.body.email,
+        Email: req.body.Email,
         devicename: req.body.devicename,
         last_update_at: req.body.last_update_at,
         password: hashedPassword,
@@ -86,8 +92,10 @@ class UserController {
   //logging in with username and password
   static async login(req, res) {
     try {
-      const user = await Users.findOne({ Name_User: req.body.Name_User });
-      console.log("user name", user);
+      const user = await Users.findOne({
+        where: { Name_User: req.body.Name_User },
+      });
+      console.log("user name", req.body.Name_User);
       if (!user) {
         return res.status(400).json({
           status: "fail",
@@ -116,6 +124,9 @@ class UserController {
         {
           user: {
             Name_User: user.Name_User,
+            Role: user.Role,
+            id: user.id,
+            Email: user.Email,
           },
         },
         process.env.JWT_SECRET,

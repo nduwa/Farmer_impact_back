@@ -26,7 +26,7 @@ const userValidationSchema = Joi.object({
       "string.min": "The last name can not be less than 10 characters long",
     }),
 
-  email: Joi.string().trim().email().required().messages({
+  Email: Joi.string().trim().email().required().messages({
     "string.email": "Invalid email type",
     "string.empty": "Email field can not be empty",
     "any.required": "Email is required",
