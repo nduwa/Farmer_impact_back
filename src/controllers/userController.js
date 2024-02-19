@@ -9,8 +9,7 @@ class UserController {
   //user creation/signup/adding or registering a user
   static async createUser(req, res) {
     try {
-      //   user validation
-
+  
       console.log(req.body);
       const { error } = userValidationSchema.validate(req.body);
 
