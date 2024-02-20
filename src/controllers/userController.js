@@ -5,12 +5,14 @@ import loginValidationSchema from "../validations/loginValidation";
 import bcrypt from "bcrypt";
 import Jwt from "jsonwebtoken";
 import { generateRandomString } from "../helpers/randomStringGenerator";
+import * as dotenv from "dotenv";
+
+dotenv.config();
 
 class UserController {
   //user creation/signup/adding or registering a user
   static async createUser(req, res) {
     try {
-  
       console.log(req.body);
       const { error } = userValidationSchema.validate(req.body);
 
@@ -99,6 +101,8 @@ class UserController {
           status: "fail",
           message: error.details[0].message,
         });
+      const appLogin = req.query.appLogin || 0; //appLogin = 1 if user logs in from the app
+
       const user = await Users.findOne({
         where: { Name_User: req.body.Name_User },
       });
@@ -131,6 +135,7 @@ class UserController {
         {
           user: {
             Name_User: user.Name_User,
+            Name_Full: user.Name_Full,
             Role: user.Role,
             id: user.id,
             Email: user.Email,
@@ -138,7 +143,11 @@ class UserController {
         },
         process.env.JWT_SECRET,
         {
-          expiresIn: "2d",
+          /* if app users logs in token expires in 6 months[180d], else 2 days[2d] */
+          expiresIn:
+            appLogin === 0
+              ? process.env.TKN_EXPIRY_WEB
+              : process.env.TKN_EXPIRY_APP,
         }
       );
 
