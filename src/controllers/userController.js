@@ -1,6 +1,7 @@
 import { Op } from "sequelize";
 import Users from "../models/rtc_users";
 import userValidationSchema from "../validations/userValidations";
+import loginValidationSchema from "../validations/loginValidation";
 import bcrypt from "bcrypt";
 import Jwt from "jsonwebtoken";
 import { generateRandomString } from "../helpers/randomStringGenerator";
@@ -91,6 +92,13 @@ class UserController {
   //logging in with username and password
   static async login(req, res) {
     try {
+      const { error } = loginValidationSchema.validate(req.body);
+
+      if (error)
+        return res.status(400).json({
+          status: "fail",
+          message: error.details[0].message,
+        });
       const user = await Users.findOne({
         where: { Name_User: req.body.Name_User },
       });
