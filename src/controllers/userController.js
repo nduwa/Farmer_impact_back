@@ -75,6 +75,61 @@ class UserController {
     }
   }
 
+  // update user
+
+  static async updateUser (req,res){
+    try{
+const userId = req.params.userId
+console.log("user is", userId)
+
+const user = await Users.findOne({
+  where: { id: userId },
+});
+if(!user)
+{
+  return res.status(404).json({
+    status:"fail",
+    message:`User with ID ${userId} not found`
+  })
+}
+
+
+const hashedPassword = await bcrypt.hash(req.body.password, 10);
+const __kp_User = generateRandomString(32);
+const _kf_Location = generateRandomString(32);
+await user.update({
+  status: 0,
+  __kp_User: __kp_User,
+  _kf_Location: _kf_Location,
+  Name_Full: req.body.Name_Full,
+  Name_User: req.body.Name_User,
+  Role: req.body.Role,
+  z_recCreateAccountName: req.body.z_recCreateAccountName,
+  z_recCreateTimestamp: req.body.z_recCreateTimestamp,
+  z_recModifyAccountName: req.body.z_recModifyAccountName,
+  z_recModifyTimestamp: req.body.z_recModifyTimestamp,
+  Phone: req.body.Phone,
+  Phone_Airtime: req.body.Phone_Airtime,
+  Email: req.body.Email,
+  devicename: req.body.devicename,
+  last_update_at: req.body.last_update_at,
+  password: hashedPassword,
+
+})
+res.status(200).json({
+  status: "success",
+  message: "User updated successfully",
+  data: user,
+});
+
+    }catch (error) {
+      res.status(500).json({
+        status: "fail",
+        message: error.message,
+      });
+      console.log(error);
+    }
+  }
   //get all users from users table
   static async getAllUsers(req, res) {
     try {
