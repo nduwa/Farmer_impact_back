@@ -146,6 +146,37 @@ res.status(200).json({
     }
   }
 
+  // get a single user by if
+
+  static async getSingleUser (req,res){
+    try{
+      const userId = req.params.userId
+      console.log("user is", userId)
+      
+      const user = await Users.findOne({
+        where: { id: userId },
+      });
+      if(!user)
+      {
+        return res.status(404).json({
+          status:"fail",
+          message:`User with ID ${userId} not found`
+        })
+      }
+      return res.status(200).json({
+        status:"Success",
+        message:"User retrieved successfully",
+        data:user
+      })
+    }catch (error) {
+      res.status(500).json({
+        status: "fail",
+        message: error.message,
+      });
+      console.log(error);
+    }    
+
+  }
   //logging in with username and password
   static async login(req, res) {
     try {

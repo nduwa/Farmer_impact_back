@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../utils/database');
+import sequelize from '../database/connectDb';
 
 const Mobile_App_Modules = sequelize.define('rtc_mobile_app_modules',{
     id:{
