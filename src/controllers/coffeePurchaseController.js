@@ -20,13 +20,7 @@ class CoffeePurchaseController{
                     Transaction.findAll(
                         { where:{_kf_Station:kp_station,_kf_Season: kp_season }})
                         .then(transactionData =>{
-                            const kf_staff = transactionData._kf_Staff;
-                            console.log("staff:", kf_staff);
                             
-                            Staff.findOne({where:{__kp_Staff:kf_staff}})
-                            .then(staffDetails =>{
-                                console.log("details:", staffDetails);
-                            })
                         console.log("Transaction No:", transactionData.length);
                         if(!transactionData || transactionData.length === 0){
                             return res.status(404).json({
