@@ -6,7 +6,7 @@ import bcrypt from "bcrypt";
 import Jwt from "jsonwebtoken";
 import { generateRandomString } from "../helpers/randomStringGenerator";
 import * as dotenv from "dotenv";
-
+import generateToken from "../helpers/generateToken";
 dotenv.config();
 
 class UserController {
@@ -215,27 +215,27 @@ res.status(200).json({
 
       // create token
 
-      const token = Jwt.sign(
-        {
-          user: {
-            Name_User: user.Name_User,
-            Name_Full: user.Name_Full,
-            Role: user.Role,
-            id: user.id,
-            __kp_User: user.__kp_User,
-            Email: user.Email,
-          },
-        },
-        process.env.JWT_SECRET,
-        {
-          /* if app users logs in token expires in 6 months[180d], else 2 days[2d] */
-          expiresIn:
-            appLogin === 0
-              ? process.env.TKN_EXPIRY_WEB
-              : process.env.TKN_EXPIRY_APP,
-        }
-      );
-
+      // const token = Jwt.sign(
+      //   {
+      //     user: {
+      //       Name_User: user.Name_User,
+      //       Name_Full: user.Name_Full,
+      //       Role: user.Role,
+      //       id: user.id,
+      //       Email: user.Email,
+      //     },
+      //   },
+      //   process.env.JWT_SECRET,
+      //   {
+      //     /* if app users logs in token expires in 6 months[180d], else 2 days[2d] */
+      //     expiresIn:
+      //       appLogin === 0
+      //         ? process.env.TKN_EXPIRY_WEB
+      //         : process.env.TKN_EXPIRY_APP,
+      //   }
+      // );
+const token = generateToken(user,appLogin)
+console.log("token",token)
       res.status(200).json({
         status: "success",
         message: "User logged in successfully",
