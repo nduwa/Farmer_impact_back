@@ -7,6 +7,7 @@ userRoutes.post('/login', UserController.login)
 userRoutes.post('/signup', UserController.createUser)
 userRoutes.put('/update/:userId', UserController.updateUser)
 userRoutes.get('/user/:userId', UserController.getSingleUser)
+userRoutes.get('/staff', UserController.getAllStaff)
 
 
 export default userRoutes
