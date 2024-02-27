@@ -146,6 +146,20 @@ res.status(200).json({
       return res.status(500).json({ status: "fail", error: error.message });
     }
   }
+  static async getAllStaff(req, res) {
+    try {
+      const staffs = await Staff.findAll();
+      console.log("staff", staffs.length);
+      if (!staffs || staffs.length === 0) {
+        return res
+          .status(404)
+          .json({ status: "fail", message: "No users found" });
+      }
+      return res.status(200).json({ status: "success", data: staffs });
+    } catch (error) {
+      return res.status(500).json({ status: "fail", error: error.message });
+    }
+  }
 
   // get a single user by if
 
@@ -154,7 +168,7 @@ res.status(200).json({
       const userId = req.params.userId
       console.log("user is", userId)
       
-      const user = await Users.findOne({
+      const user = await Staff.findOne({
         where: { id: userId },
       });
       if(!user)
