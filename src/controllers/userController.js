@@ -36,15 +36,13 @@ class UserController {
       }
 
       const hashedPassword = await bcrypt.hash(req.body.password, 10);
-      const __kp_User = generateRandomString(32);
-      const _kf_Location = generateRandomString(32);
-      console.log("__kp_User:", __kp_User);
-      console.log("_kf_Location:", _kf_Location);
+      // const __kp_User = generateRandomString(32);
+      // const _kf_Location = generateRandomString(32);
 
       const user = new Users({
         status: 0,
-        __kp_User: __kp_User,
-        _kf_Location: _kf_Location,
+        __kp_User: req.body.__kp_User,
+        _kf_Location: req.body._kf_Location,
         Name_Full: req.body.Name_Full,
         Name_User: req.body.Name_User,
         Role: req.body.Role,
@@ -224,6 +222,7 @@ res.status(200).json({
             Name_Full: user.Name_Full,
             Role: user.Role,
             id: user.id,
+            __kp_User: user.__kp_User,
             Email: user.Email,
           },
         },
