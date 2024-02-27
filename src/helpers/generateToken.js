@@ -1,10 +1,11 @@
 import Jwt from 'jsonwebtoken'
 import dotenv from 'dotenv'
 dotenv.config()
-const generateToken = (user,appLogin) =>{
+const generateToken = (user,appLogin,staff) =>{
     const token = Jwt.sign(
         {
-            user
+            user,
+            staff
         },
         process.env.JWT_SECRET,
         {

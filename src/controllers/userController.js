@@ -5,6 +5,7 @@ import loginValidationSchema from "../validations/loginValidation";
 import bcrypt from "bcrypt";
 import Jwt from "jsonwebtoken";
 import { generateRandomString } from "../helpers/randomStringGenerator";
+import Staff from '../models/rtc_staff'
 import * as dotenv from "dotenv";
 import generateToken from "../helpers/generateToken";
 dotenv.config();
@@ -161,11 +162,14 @@ res.status(200).json({
           message:`User with ID ${userId} not found`
         })
       }
+      
       return res.status(200).json({
         status:"Success",
         message:"User retrieved successfully",
         data:user
       })
+      
+
     }catch (error) {
       res.status(500).json({
         status: "fail",
@@ -212,29 +216,26 @@ res.status(200).json({
           message: "Invalid  password",
         });
       }
+      
 
-      // create token
+      
+      console.log("user primary key", user.__kp_User)
+      const kp_user =user.__kp_User
+      
+      const staff = await Staff.findOne({
+        where: { _kf_User: kp_user },
+      });
+      
+      if (!staff) {
+        return res.status(404).json({
+          status: 'fail',
+          message: 'No staff found for the given user',
+        });
+      }
+      console.log('staff', staff);
+      
 
-      // const token = Jwt.sign(
-      //   {
-      //     user: {
-      //       Name_User: user.Name_User,
-      //       Name_Full: user.Name_Full,
-      //       Role: user.Role,
-      //       id: user.id,
-      //       Email: user.Email,
-      //     },
-      //   },
-      //   process.env.JWT_SECRET,
-      //   {
-      //     /* if app users logs in token expires in 6 months[180d], else 2 days[2d] */
-      //     expiresIn:
-      //       appLogin === 0
-      //         ? process.env.TKN_EXPIRY_WEB
-      //         : process.env.TKN_EXPIRY_APP,
-      //   }
-      // );
-const token = generateToken(user,appLogin)
+const token = generateToken(user,appLogin,staff)
 console.log("token",token)
       res.status(200).json({
         status: "success",
