@@ -7,6 +7,7 @@ const router = express.Router()
 router.get('/dailyJournal', verifyToken, coffeePuchase.getSCDailyJournals)
 router.get('/dailyJournal/:journalId', verifyToken, coffeePuchase.getSCDailyJournalsByJournalId)
 router.get('/dailyJournal/transaction/:id', verifyToken, coffeePuchase.getTransactionById)
-router.put('/dailyJournal/transaction/:id', verifyToken, coffeePuchase.updateTransactionById)
+router.put('/dailyJournal/transaction/:id', verifyToken, coffeePuchase.removeTransaction)
+router.put('/dailyJournal/transaction/update/:id', verifyToken, coffeePuchase.updateTransaction)
 
 export default router
