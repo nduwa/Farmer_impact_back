@@ -3,7 +3,7 @@ import Users from "../models/rtc_users";
 import userValidationSchema from "../validations/userValidations";
 import loginValidationSchema from "../validations/loginValidation";
 import bcrypt from "bcrypt";
-import Jwt from "jsonwebtoken";
+
 import { generateRandomString } from "../helpers/randomStringGenerator";
 import Staff from '../models/rtc_staff'
 import * as dotenv from "dotenv";
@@ -75,7 +75,6 @@ class UserController {
   }
 
   // update user
-
   static async updateUser (req,res){
     try{
 const userId = req.params.userId
@@ -160,12 +159,9 @@ res.status(200).json({
   }
 
   // get a single user by if
-
   static async getSingleUser (req,res){
     try{
       const userId = req.params.userId
-      console.log("user is", userId)
-      
       const user = await Staff.findOne({
         where: { id: userId },
       });
@@ -182,8 +178,6 @@ res.status(200).json({
         message:"User retrieved successfully",
         data:user
       })
-      
-
     }catch (error) {
       res.status(500).json({
         status: "fail",
@@ -197,18 +191,16 @@ res.status(200).json({
   static async login(req, res) {
     try {
       const { error } = loginValidationSchema.validate(req.body);
-
       if (error)
         return res.status(400).json({
           status: "fail",
           message: error.details[0].message,
         });
-      const appLogin = req.query.appLogin || 0; //appLogin = 1 if user logs in from the app
+      const appLogin = req.query.appLogin || 0; 
 
       const user = await Users.findOne({
         where: { Name_User: req.body.Name_User },
       });
-      console.log("user name", req.body.Name_User);
       if (!user) {
         return res.status(400).json({
           status: "fail",
@@ -220,9 +212,6 @@ res.status(200).json({
         req.body.password,
         user.password
       );
-      console.log("password", req.body.password);
-      console.log("user password", user.password);
-      console.log("valid", validPassword);
 
       if (!validPassword) {
         return res.status(400).json({
@@ -232,10 +221,7 @@ res.status(200).json({
       }
       
 
-      
-      console.log("user primary key", user.__kp_User)
       const kp_user =user.__kp_User
-      
       const staff = await Staff.findOne({
         where: { _kf_User: kp_user },
       });
@@ -246,18 +232,16 @@ res.status(200).json({
           message: 'No staff found for the given user',
         });
       }
-      console.log('staff', staff);
       
 
 const token = generateToken(user,appLogin,staff)
-console.log("token",token)
       res.status(200).json({
         status: "success",
         message: "User logged in successfully",
         token: token,
       });
     } catch (err) {
-      console.error(err);
+      console.error(errorr);
       res.status(500).json({
         status: "fail",
         message: err.message,

@@ -31,7 +31,6 @@ class AccessControlController{
 
          //Assigning permissions
          static async assignPermissionsToUser  (req, res)  {
-            // const { userId, moduleId, view, add, del, edit, platform } = req.body;
           
             try {
               // Create a new entry in the Mobile_App table
