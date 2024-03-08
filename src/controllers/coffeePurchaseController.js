@@ -12,11 +12,15 @@ class CoffeePurchaseController {
         .then(seasonData => {
           const kp_season = seasonData.__kp_Season;
           const kp_station = req.user?.staff?._kf_Station;
+          const Name = req.user?.staff?.Name;;
           Transaction.findAll(
             { where: { _kf_Station: kp_station, _kf_Season: kp_season, status: 0 } })
             .then(transactionData => {
               Staff.findAll({ where: { _kf_Station: kp_station } })
                 .then(staffData => {
+              console.log("kf kp",  kp_station)
+              console.log("kf kp",  Name)
+
                   console.log("Transaction No:", transactionData.length);
                   if (!transactionData || transactionData.length === 0) {
                     return res.status(404).json({
