@@ -1,6 +1,7 @@
 import Transaction from "../models/rtc_transaction"
 import Staff from "../models/rtc_staff"
 import Season from "../models/rtc_seasons"
+import Day_lot from '../models/rtc_day_lot_data'
 
 class CoffeePurchaseController {
   static async getSCDailyJournals(req, res) {
@@ -270,6 +271,86 @@ class CoffeePurchaseController {
       });
     }
   }
+
+//   static async addFees  (req, res)  {
+          
+//     try {
+//       // Create a new entry in the Mobile_App table
+
+//       const fees = new Day_lot ({
+//        commission_fees : req.body.commission_price,
+//         transport_fees: req.body.transport_fees
+
+//       })
+//       await fees.save()
+  
+//       res.status(200).json({ success: true, 
+//         message: 'fees added successfully',
+//         data:fees });
+//     } catch (error) {
+//       console.error('Error adding fees:', error.message);
+//       res.status(500).json({ success: false, message: 'Internal server error' });
+  
+
+// }
+// }
+
+
+
+static async addCommissions(req, res)  {
+          
+  try {
+    // Create a new entry in the Mobile_App table
+
+    const commissions = new Day_lot ({
+      created_at:req.body.created_at,
+      created_by:req.body.created_by,
+      _kf_Supplier:req.body._kf_Supplier,
+      _kf_Station:req.body._kf_Station,
+      day_lot_number:req.body.day_lot_number,
+      UserID:req.body.UserID,
+      site_day_lot:req.body.site_day_lot,
+      site_cherry_kgs:req.body.site_cherry_kgs,
+      site_cherry_price:req.body.site_cherry_price,
+      site_Floater_kgs:req.body.site_Floater_kgs,
+      site_Floater_price:req.body.site_Floater_price,
+      // commission_price : req.body.commission_price,
+      transport_fees: req.body.transport_fees,
+     commission_fees : req.body.commission_fees,
+      floater_transport_fee: req.body.floater_transport_fee,
+      // cherry_transport_fees: req.body.cherry_transport_fees,
+      site_total_payment: req.body.site_total_payment,
+      status:0
+    })
+    await commissions.save()
+
+    res.status(200).json({ success: true, 
+      message: 'commissions added successfully',
+      data:commissions });
+  } catch (error) {
+    console.error('Error adding commissions:', error.message);
+    res.status(500).json({ success: false, message: error.message });
+
+
+}
+}
+
+
+
+static async getAllDayLot(req, res) {
+  try {
+    const dayLots = await Day_lot.findAll();
+    console.log("Dayaaaa", dayLots.length);
+    if (!dayLots || dayLots.length === 0) {
+      return res
+        .status(404)
+        .json({ status: "fail", message: "No daylotws found" });
+    }
+    return res.status(200).json({ status: "success", data: dayLots });
+  } catch (error) {
+    return res.status(500).json({ status: "fail", error: error.message });
+  }
+}
   
 
 
