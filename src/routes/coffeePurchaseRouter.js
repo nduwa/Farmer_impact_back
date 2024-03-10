@@ -12,6 +12,6 @@ router.put('/dailyJournal/transaction/update/:id', verifyToken, coffeePuchase.up
 // router.post('/dailyJournal/fees', verifyToken, coffeePuchase.addFees)
 router.post('/dailyJournal/commissions', verifyToken, coffeePuchase.addCommissions)
 router.get('/dailyJournal/daylots', coffeePuchase.getAllDayLot)
-
+router.put('/dailyJournal/journal/approve/:journalId', verifyToken, coffeePuchase.approveJournal)
 
 export default router

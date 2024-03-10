@@ -2,6 +2,7 @@ import Transaction from "../models/rtc_transaction"
 import Staff from "../models/rtc_staff"
 import Season from "../models/rtc_seasons"
 import Day_lot from '../models/rtc_day_lot_data'
+import  { generateRandomString } from "../helpers/randomStringGenerator"
 
 class CoffeePurchaseController {
   static async getSCDailyJournals(req, res) {
@@ -272,30 +273,72 @@ class CoffeePurchaseController {
     }
   }
 
-//   static async addFees  (req, res)  {
-          
-//     try {
-//       // Create a new entry in the Mobile_App table
 
-//       const fees = new Day_lot ({
-//        commission_fees : req.body.commission_price,
-//         transport_fees: req.body.transport_fees
 
-//       })
-//       await fees.save()
+
+
+  static async approveJournal(req, res) {
+    try {
+      const journalId = req.params.journalId;
+      console.log("site", journalId)
+  const _kp_Log = generateRandomString(32)
+      const seasonData = await Season.findOne({
+        attributes: ['__kp_Season'],
+        order: [['id', 'DESC']],
+        raw: true,
+        limit: 1,
+        where: { Default: 1 }
+      });
   
-//       res.status(200).json({ success: true, 
-//         message: 'fees added successfully',
-//         data:fees });
-//     } catch (error) {
-//       console.error('Error adding fees:', error.message);
-//       res.status(500).json({ success: false, message: 'Internal server error' });
+      if (!seasonData) {
+        return res.status(404).json({
+          status: "fail",
+          message: "No season found",
+        });
+      }
   
-
-// }
-// }
-
-
+      const kp_season = seasonData.__kp_Season;
+      const kp_station = req.user?.staff._kf_Station;
+  
+      const journalToApprove = await Transaction.findAll({
+        where: {
+          _kf_Station: kp_station,
+          _kf_Season: kp_season,
+          site_day_lot: journalId,
+          approved: 0
+        }
+      });
+  
+      if (!journalToApprove || journalToApprove.length === 0) {
+        return res.status(404).json({
+          status: "fail",
+          message: "This Journal is already approved!!!!",
+        });
+      }
+  
+      const dataToUpdate = {
+        __Kp_Log:_kp_Log,
+        // recordId: req.body.unitprice,
+        approved: 1,
+        approved_at: Date.now(),
+        // approved_by:req.body.approved_by,
+        uploaded_at: Date.now()
+      };
+  
+      await Promise.all(journalToApprove.map(journal => journal.update(dataToUpdate)));
+  
+      return res.status(200).json({
+        status: "success",
+        message: "Jounal approved successfully !!!",
+        data: journalToApprove
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: "fail",
+        error: error.message
+      });
+    }
+  }
 
 static async addCommissions(req, res)  {
           
