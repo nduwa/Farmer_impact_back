@@ -2,16 +2,17 @@ import Jwt from 'jsonwebtoken';
 
 // Middleware to verify token
 const verifyToken = (req, res, next) => {
-    const token = req.header("auth_token");
-
-    if (!token) {
-        return res.status(401).json({
-            status: 'Fail',
-            Message: "Please login to continue"
-        });
-    }
-
     try {
+        const token = req.header("auth_token");
+
+        console.log(token)
+        if (!token) {
+            return res.status(401).json({
+                status: 'Fail',
+                Message: "Please login to continue"
+            });
+        }
+
         const verified = Jwt.verify(token, process.env.JWT_SECRET);
         if (verified) {
             req.user = verified;

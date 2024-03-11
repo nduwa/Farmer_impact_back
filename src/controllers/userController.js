@@ -3,10 +3,11 @@ import Users from "../models/rtc_users";
 import userValidationSchema from "../validations/userValidations";
 import loginValidationSchema from "../validations/loginValidation";
 import bcrypt from "bcrypt";
-import Jwt from "jsonwebtoken";
-import { generateRandomString } from "../helpers/randomStringGenerator";
-import * as dotenv from "dotenv";
 
+import { generateRandomString } from "../helpers/randomStringGenerator";
+import Staff from '../models/rtc_staff'
+import * as dotenv from "dotenv";
+import generateToken from "../helpers/generateToken";
 dotenv.config();
 
 class UserController {
@@ -74,31 +75,40 @@ class UserController {
   }
 
   // update user
-
   static async updateUser (req,res){
     try{
 const userId = req.params.userId
 console.log("user is", userId)
 
-const user = await Users.findOne({
+const staffUser = await Staff.findOne({
   where: { id: userId },
 });
-if(!user)
+if(!staffUser)
 {
   return res.status(404).json({
     status:"fail",
     message:`User with ID ${userId} not found`
   })
 }
+console.log("useudihwefhseu",staffUser)
 
 
 const hashedPassword = await bcrypt.hash(req.body.password, 10);
 const __kp_User = generateRandomString(32);
 const _kf_Location = generateRandomString(32);
-await user.update({
+const updatedUser = await Users.findOne({
+  where: { __kp_User: staffUser._kf_User },
+});
+if (!updatedUser) {
+  return res.status(404).json({
+    status: "fail",
+    message: `User not found in User table with kf_user ${staffUser.id}`,
+  });
+}
+await updatedUser.update({
   status: 0,
-  __kp_User: __kp_User,
-  _kf_Location: _kf_Location,
+  __kp_User: req.body.__kp_User,
+  _kf_Location: req.body._kf_Location,
   Name_Full: req.body.Name_Full,
   Name_User: req.body.Name_User,
   Role: req.body.Role,
@@ -114,10 +124,11 @@ await user.update({
   password: hashedPassword,
 
 })
+console.log("after", updatedUser)
 res.status(200).json({
   status: "success",
   message: "User updated successfully",
-  data: user,
+  data: updatedUser,
 });
 
     }catch (error) {
@@ -143,14 +154,25 @@ res.status(200).json({
       return res.status(500).json({ status: "fail", error: error.message });
     }
   }
+  static async getAllStaff(req, res) {
+    try {
+      const staffs = await Staff.findAll();
+      console.log("staff", staffs.length);
+      if (!staffs || staffs.length === 0) {
+        return res
+          .status(404)
+          .json({ status: "fail", message: "No users found" });
+      }
+      return res.status(200).json({ status: "success", data: staffs });
+    } catch (error) {
+      return res.status(500).json({ status: "fail", error: error.message });
+    }
+  }
 
   // get a single user by if
-
   static async getSingleUser (req,res){
     try{
       const userId = req.params.userId
-      console.log("user is", userId)
-      
       const user = await Users.findOne({
         where: { id: userId },
       });
@@ -161,6 +183,7 @@ res.status(200).json({
           message:`User with ID ${userId} not found`
         })
       }
+      
       return res.status(200).json({
         status:"Success",
         message:"User retrieved successfully",
@@ -179,18 +202,16 @@ res.status(200).json({
   static async login(req, res) {
     try {
       const { error } = loginValidationSchema.validate(req.body);
-
       if (error)
         return res.status(400).json({
           status: "fail",
           message: error.details[0].message,
         });
-      const appLogin = req.query.appLogin || 0; //appLogin = 1 if user logs in from the app
+      const appLogin = req.query.appLogin || 0; 
 
       const user = await Users.findOne({
         where: { Name_User: req.body.Name_User },
       });
-      console.log("user name", req.body.Name_User);
       if (!user) {
         return res.status(400).json({
           status: "fail",
@@ -212,37 +233,29 @@ res.status(200).json({
           message: "Invalid  password",
         });
       }
+      
 
-      // create token
+      const kp_user =user.__kp_User
+      const staff = await Staff.findOne({
+        where: { _kf_User: kp_user },
+      });
+      
+      if (!staff) {
+        return res.status(404).json({
+          status: 'fail',
+          message: 'No staff found for the given user',
+        });
+      }
+      
 
-      const token = Jwt.sign(
-        {
-          user: {
-            Name_User: user.Name_User,
-            Name_Full: user.Name_Full,
-            Role: user.Role,
-            id: user.id,
-            __kp_User: user.__kp_User,
-            Email: user.Email,
-          },
-        },
-        process.env.JWT_SECRET,
-        {
-          /* if app users logs in token expires in 6 months[180d], else 2 days[2d] */
-          expiresIn:
-            appLogin === 0
-              ? process.env.TKN_EXPIRY_WEB
-              : process.env.TKN_EXPIRY_APP,
-        }
-      );
-
+const token = generateToken(user,appLogin,staff)
       res.status(200).json({
         status: "success",
         message: "User logged in successfully",
         token: token,
       });
     } catch (err) {
-      console.error(err);
+      console.error(errorr);
       res.status(500).json({
         status: "fail",
         message: err.message,

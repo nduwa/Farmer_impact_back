@@ -3,7 +3,6 @@ import router from './src/routes/index.js';
 
 import dotenv from "dotenv";
 import cors from "cors";
-import connectDb from "./src/database/connectDb.js";
 import sequelize from './src/database/connectDb.js';
 
 dotenv.config();
