@@ -4,6 +4,7 @@ import accessControlRoutes from "./accessControlRoute";
 import mobileSyncRoutes from "./mobileSyncRoutes";
 import CoffeePurchaseRoutes from "./coffeePurchaseRouter";
 import stationRoutes from "./stationRoute";
+import daylotsRoutes from "./dayLotsRoute";
 const router = Router();
 router.use("/user", userRoutes);
 router.use("/accessControl", accessControlRoutes);
@@ -12,5 +13,6 @@ router.use('/user',userRoutes)
 router.use('/accessControl',accessControlRoutes)
 router.use('/coffeePurchase',CoffeePurchaseRoutes)
 router.use('/station',stationRoutes)
+router.use('/lots',daylotsRoutes)
 
 export default router

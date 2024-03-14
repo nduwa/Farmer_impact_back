@@ -30,7 +30,7 @@ router.post(
   verifyToken,
   coffeePuchase.addCommissions
 );
-router.get("/dailyJournal/daylots", coffeePuchase.getAllDayLot);
+// router.get("/dailyJournal/daylots", coffeePuchase.getAllDayLot);
 router.put(
   "/dailyJournal/journal/approve/:journalId",
   verifyToken,

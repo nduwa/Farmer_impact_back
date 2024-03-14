@@ -387,20 +387,7 @@ class CoffeePurchaseController {
     }
   }
 
-  static async getAllDayLot(req, res) {
-    try {
-      const dayLots = await Day_lot.findAll();
-      console.log("Dayaaaa", dayLots.length);
-      if (!dayLots || dayLots.length === 0) {
-        return res
-          .status(404)
-          .json({ status: "fail", message: "No daylotws found" });
-      }
-      return res.status(200).json({ status: "success", data: dayLots });
-    } catch (error) {
-      return res.status(500).json({ status: "fail", error: error.message });
-    }
-  }
+ 
 
   static async getWSCDailyJournalsByDate(req, res) {
     try {
