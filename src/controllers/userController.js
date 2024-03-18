@@ -37,15 +37,13 @@ class UserController {
       }
 
       const hashedPassword = await bcrypt.hash(req.body.password, 10);
-      const __kp_User = generateRandomString(32);
-      const _kf_Location = generateRandomString(32);
-      console.log("__kp_User:", __kp_User);
-      console.log("_kf_Location:", _kf_Location);
+      // const __kp_User = generateRandomString(32);
+      // const _kf_Location = generateRandomString(32);
 
       const user = new Users({
         status: 0,
-        __kp_User: __kp_User,
-        _kf_Location: _kf_Location,
+        __kp_User: req.body.__kp_User,
+        _kf_Location: req.body._kf_Location,
         Name_Full: req.body.Name_Full,
         Name_User: req.body.Name_User,
         Role: req.body.Role,
@@ -82,25 +80,35 @@ class UserController {
 const userId = req.params.userId
 console.log("user is", userId)
 
-const user = await Users.findOne({
+const staffUser = await Staff.findOne({
   where: { id: userId },
 });
-if(!user)
+if(!staffUser)
 {
   return res.status(404).json({
     status:"fail",
     message:`User with ID ${userId} not found`
   })
 }
+console.log("useudihwefhseu",staffUser)
 
 
 const hashedPassword = await bcrypt.hash(req.body.password, 10);
 const __kp_User = generateRandomString(32);
 const _kf_Location = generateRandomString(32);
-await user.update({
+const updatedUser = await Users.findOne({
+  where: { __kp_User: staffUser._kf_User },
+});
+if (!updatedUser) {
+  return res.status(404).json({
+    status: "fail",
+    message: `User not found in User table with kf_user ${staffUser.id}`,
+  });
+}
+await updatedUser.update({
   status: 0,
-  __kp_User: __kp_User,
-  _kf_Location: _kf_Location,
+  __kp_User: req.body.__kp_User,
+  _kf_Location: req.body._kf_Location,
   Name_Full: req.body.Name_Full,
   Name_User: req.body.Name_User,
   Role: req.body.Role,
@@ -116,10 +124,11 @@ await user.update({
   password: hashedPassword,
 
 })
+console.log("after", updatedUser)
 res.status(200).json({
   status: "success",
   message: "User updated successfully",
-  data: user,
+  data: updatedUser,
 });
 
     }catch (error) {
@@ -164,7 +173,9 @@ res.status(200).json({
   static async getSingleUser (req,res){
     try{
       const userId = req.params.userId
-      const user = await Staff.findOne({
+      console.log("user is", userId)
+      
+      const user = await Users.findOne({
         where: { id: userId },
       });
       if(!user)
