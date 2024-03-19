@@ -5,7 +5,7 @@ import loginValidationSchema from "../validations/loginValidation";
 import bcrypt from "bcrypt";
 
 import { generateRandomString } from "../helpers/randomStringGenerator";
-import Staff from '../models/rtc_staff'
+import Staff from "../models/rtc_staff";
 import * as dotenv from "dotenv";
 import generateToken from "../helpers/generateToken";
 dotenv.config();
@@ -75,64 +75,59 @@ class UserController {
   }
 
   // update user
-  static async updateUser (req,res){
-    try{
-const userId = req.params.userId
-console.log("user is", userId)
+  static async updateUser(req, res) {
+    try {
+      const userId = req.params.userId;
+      console.log("user is", userId);
 
-const staffUser = await Staff.findOne({
-  where: { id: userId },
-});
-if(!staffUser)
-{
-  return res.status(404).json({
-    status:"fail",
-    message:`User with ID ${userId} not found`
-  })
-}
-console.log("useudihwefhseu",staffUser)
+      const staffUser = await Staff.findOne({
+        where: { id: userId },
+      });
+      if (!staffUser) {
+        return res.status(404).json({
+          status: "fail",
+          message: `User with ID ${userId} not found`,
+        });
+      }
+      console.log("useudihwefhseu", staffUser);
 
-
-const hashedPassword = await bcrypt.hash(req.body.password, 10);
-const __kp_User = generateRandomString(32);
-const _kf_Location = generateRandomString(32);
-
-const updatedUser = await Users.findOne({
-  where: { __kp_User: staffUser._kf_User },
-});
-if (!updatedUser) {
-  return res.status(404).json({
-    status: "fail",
-    message: `User not found in User table with kf_user ${staffUser.id}`,
-  });
-}
-await updatedUser.update({
-  status: 0,
-  __kp_User: req.body.__kp_User,
-  _kf_Location: req.body._kf_Location,
-  Name_Full: req.body.Name_Full,
-  Name_User: req.body.Name_User,
-  Role: req.body.Role,
-  z_recCreateAccountName: req.body.z_recCreateAccountName,
-  z_recCreateTimestamp: req.body.z_recCreateTimestamp,
-  z_recModifyAccountName: req.body.z_recModifyAccountName,
-  z_recModifyTimestamp: req.body.z_recModifyTimestamp,
-  Phone: req.body.Phone,
-  Phone_Airtime: req.body.Phone_Airtime,
-  Email: req.body.Email,
-  devicename: req.body.devicename,
-  last_update_at: req.body.last_update_at,
-  password: hashedPassword,
-
-})
-console.log("after", updatedUser)
-res.status(200).json({
-  status: "success",
-  message: "User updated successfully",
-  data: updatedUser,
-});
-
-    }catch (error) {
+      const hashedPassword = await bcrypt.hash(req.body.password, 10);
+      const __kp_User = generateRandomString(32);
+      const _kf_Location = generateRandomString(32);
+      const updatedUser = await Users.findOne({
+        where: { __kp_User: staffUser._kf_User },
+      });
+      if (!updatedUser) {
+        return res.status(404).json({
+          status: "fail",
+          message: `User not found in User table with kf_user ${staffUser.id}`,
+        });
+      }
+      await updatedUser.update({
+        status: 0,
+        __kp_User: req.body.__kp_User,
+        _kf_Location: req.body._kf_Location,
+        Name_Full: req.body.Name_Full,
+        Name_User: req.body.Name_User,
+        Role: req.body.Role,
+        z_recCreateAccountName: req.body.z_recCreateAccountName,
+        z_recCreateTimestamp: req.body.z_recCreateTimestamp,
+        z_recModifyAccountName: req.body.z_recModifyAccountName,
+        z_recModifyTimestamp: req.body.z_recModifyTimestamp,
+        Phone: req.body.Phone,
+        Phone_Airtime: req.body.Phone_Airtime,
+        Email: req.body.Email,
+        devicename: req.body.devicename,
+        last_update_at: req.body.last_update_at,
+        password: hashedPassword,
+      });
+      console.log("after", updatedUser);
+      res.status(200).json({
+        status: "success",
+        message: "User updated successfully",
+        data: updatedUser,
+      });
+    } catch (error) {
       res.status(500).json({
         status: "fail",
         message: error.message,
@@ -171,33 +166,31 @@ res.status(200).json({
   }
 
   // get a single user by if
-  static async getSingleUser (req,res){
-    try{
-      const userId = req.params.userId
+  static async getSingleUser(req, res) {
+    try {
+      const userId = req.params.userId;
       const user = await Users.findOne({
         where: { id: userId },
       });
-      if(!user)
-      {
+      if (!user) {
         return res.status(404).json({
-          status:"fail",
-          message:`User with ID ${userId} not found`
-        })
+          status: "fail",
+          message: `User with ID ${userId} not found`,
+        });
       }
-      
+
       return res.status(200).json({
-        status:"Success",
-        message:"User retrieved successfully",
-        data:user
-      })
-    }catch (error) {
+        status: "Success",
+        message: "User retrieved successfully",
+        data: user,
+      });
+    } catch (error) {
       res.status(500).json({
         status: "fail",
         message: error.message,
       });
       console.log(error);
-    }    
-
+    }
   }
   //logging in with username and password
   static async login(req, res) {
@@ -208,7 +201,7 @@ res.status(200).json({
           status: "fail",
           message: error.details[0].message,
         });
-      const appLogin = req.query.appLogin || 0; 
+      const appLogin = req.query.appLogin || 0;
 
       const user = await Users.findOne({
         where: { Name_User: req.body.Name_User },
@@ -234,22 +227,20 @@ res.status(200).json({
           message: "Invalid  password",
         });
       }
-      
 
-      const kp_user =user.__kp_User
+      const kp_user = user.__kp_User;
       const staff = await Staff.findOne({
         where: { _kf_User: kp_user },
       });
-      
+
       if (!staff) {
         return res.status(404).json({
-          status: 'fail',
-          message: 'No staff found for the given user',
+          status: "fail",
+          message: "No staff found for the given user",
         });
       }
-      
 
-const token = generateToken(user,appLogin,staff)
+      const token = generateToken(user, appLogin, staff);
       res.status(200).json({
         status: "success",
         message: "User logged in successfully",

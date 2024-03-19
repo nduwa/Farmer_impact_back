@@ -4,9 +4,71 @@ import groups from "../models/rtc_groups";
 import farmers from "../models/rtc_farmers";
 import households from "../models/rtc_households";
 import training from "../models/rtc_training";
-import inspectionQn from "../models/rtc_inspection_questions";
+import seasons from "../models/rtc_seasons";
+import suppliers from "../models/rtc_supplier";
 
 class mobileSyncController {
+  static async retrieveSupplier(req, res) {
+    try {
+      let allSuppliers = [];
+
+      const { stationId } = req.params;
+
+      let stationData = await stations.findOne({
+        where: { __kp_Station: stationId },
+      });
+
+      if (!stationData || stationData.length === 0) {
+        return res
+          .status(404)
+          .json({ status: "fail", message: "station not found" });
+      }
+
+      let supplier = await suppliers.findOne({
+        where: { __kp_Supplier: stationData._kf_Supplier },
+      });
+
+      if (!supplier || supplier.length === 0) {
+        return res
+          .status(404)
+          .json({ status: "fail", message: "no suppliers found" });
+      }
+
+      allSuppliers.push(supplier);
+
+      return res
+        .status(200)
+        .json({ status: "success", table: "rtc_supplier", data: allSuppliers });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ status: "fail", error: error.message });
+    }
+  }
+
+  static async retrieveSeason(req, res) {
+    try {
+      let allSeasons = [];
+
+      const season = await seasons.findOne({
+        order: [["z_recCreateTimestamp", "DESC"]],
+      });
+
+      if (!season || season.length === 0) {
+        return res
+          .status(404)
+          .json({ status: "fail", message: "no season found" });
+      }
+
+      allSeasons.push(season);
+
+      return res
+        .status(200)
+        .json({ status: "success", table: "rtc_seasons", data: allSeasons });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ status: "fail", error: error.message });
+    }
+  }
   static async retrieveStations(req, res) {
     try {
       let allStations = [];
