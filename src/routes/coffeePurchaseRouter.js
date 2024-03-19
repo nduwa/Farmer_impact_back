@@ -41,5 +41,13 @@ router.get(
   verifyToken,
   coffeePuchase.getWSCDailyJournalsByDate
 );
+router.post(
+  "/dailyJournal/journalBucket",
+  verifyToken,
+  coffeePuchase.AddTransactionBucket
+);
+router.post('/bucketweight', coffeePuchase.TransactionBucketWeight)
+router.get('/dryweighting',coffeePuchase.getAllBucketWeighting)
+
 
 export default router;

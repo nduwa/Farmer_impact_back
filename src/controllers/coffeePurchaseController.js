@@ -2,11 +2,16 @@ import Transaction from "../models/rtc_transaction";
 import Staff from "../models/rtc_staff";
 import Season from "../models/rtc_seasons";
 import Day_lot from "../models/rtc_day_lot_data";
+import Bucket from '../models/bucketing'
+import Dry from '../models/rtc_drying'
 import { generateRandomString } from "../helpers/randomStringGenerator";
 
 class CoffeePurchaseController {
   static async getSCDailyJournals(req, res) {
     try {
+      let whereCondition = {}; 
+    
+     
       Season.findOne(
         {
           attributes: ["__kp_Season"],
@@ -19,8 +24,15 @@ class CoffeePurchaseController {
         const kp_season = seasonData.__kp_Season;
         const kp_station = req.user?.staff?._kf_Station;
         const Name = req.user?.staff?.Name;
+        const Role = req.user?.staff?.Role;
+        if (Role === "System Admin") {s
+          whereCondition = { _kf_Season: kp_season, status: 0 };
+        } else {
+          const kp_station = req.user?.staff?._kf_Station;
+          whereCondition = { _kf_Station: kp_station, _kf_Season: kp_season, status: 0 };
+        }
         Transaction.findAll({
-          where: { _kf_Station: kp_station, _kf_Season: kp_season, status: 0 },
+          where: whereCondition,
         }).then((transactionData) => {
           Staff.findAll({ where: { _kf_Station: kp_station } }).then(
             (staffData) => {
@@ -443,6 +455,218 @@ class CoffeePurchaseController {
       return res.status(500).json({ status: "fail", error: error.message });
     }
   }
+
+// add transaction bucket
+
+    static async AddTransactionBucket(req, res){
+        let cert;
+        let sts;
+        const seasonData = await Season.findOne({
+            attributes: ['__kp_Season'],
+            order: [['id', 'DESC']],
+            raw: true,
+            limit: 1,
+            where: { Default: 1 }
+        });
+        if (!seasonData) {
+            return res.status(404).json({
+            status: "fail",
+            message: "No season found",
+            });
+        }
+        const kp_season = seasonData.__kp_Season;
+        const kp_station = req.user?.staff._kf_Station;
+        const kp_supplier = req.user?.staff._kf_Supplier;
+        const UserID = req.user.user.id;
+        const {bucket_a,bucket_b,bucket_c,day_lot,certified} = req.body;
+        if(certified == 1){
+      cert = 'Certified';
+            sts = 0;
+        }else{
+            cert = 'Uncertified';
+            sts = 1;
+        }
+        try {
+            const bucketData = await Bucket.findAll({where:{day_lot_number:day_lot}});
+            console.log("bucket hhughyrfhguerhguierhuuth", bucketData)
+            console.log("bucket ", bucketData.length, cert,sts)
+            console.log("dfsggsffs ", req.body)
+            if(!bucketData || bucketData.length === 0){ 
+
+                const bucketnumber = await Bucket.create ({
+                    created_at:Date.now(),
+                    created_by:UserID,
+                    _kf_Supplier:kp_supplier,
+                    _kf_Station:kp_station,
+                    _kf_Season:kp_season,
+                    day_lot_number:day_lot,
+                    bucketA:bucket_a,
+                    bucketB:bucket_b,
+                    bucketC:bucket_c,
+                    status:sts,
+                    certification:cert
+                }) 
+            console.log("buckett",bucketnumber)
+
+                return res.status(200).json({
+                    status: "success",
+                    message: "Bucket data inserted successfully !!!",
+                    data: bucketnumber 
+                });
+            }
+            const col = { 
+                created_at:Date.now(),
+                created_by:UserID,
+                bucketA:bucket_a,
+                bucketB:bucket_b,
+                bucketC:bucket_c,
+                status:sts,
+                certification:cert
+            };
+
+
+            // const bucketUpdate = await Bucket.update(col,{where:{day_lot_number:day_lot}})
+
+            await Promise.all(bucketData.map(bucketWeight => bucketWeight.update(col)))
+            return res.status(200).json({
+            status: "success",
+            message: "Bucket data updated successfully !!!",
+            data: bucketData
+        });
+        } catch (error) {
+            return res.status(500).json({ status: "fail", error: error.message });
+        }
+    }
+
+   
+    /*
+            Add transaction bucket weight
+    */
+    static async TransactionBucketWeight(req, res){
+        try {
+            let gradeCTaken = 0;
+            let gradeBTaken = 0;
+            let gradeATaken = 0;
+            let TakenX = 0;
+            let cert;
+            let sts;
+            const {taken_c,grade_c,taken_b,grade_b,taken_a,grade_a,day_lot,certified} = req.body;
+            if((taken_a == 'before') || (taken_b == 'before') || (taken_c =='before')){
+                TakenX = 0.55
+            }else{ 
+                TakenX = 0.45 
+            }
+            gradeATaken = grade_a - (1.2*(TakenX - 0.12) * grade_a);
+            gradeBTaken = grade_b - (1.2*(TakenX - 0.12) * grade_b);
+            gradeCTaken = grade_c - (1.2*(TakenX - 0.12) * grade_c);
+            if(certified == 1){ 
+                cert = 'Certified';
+                sts = 0;
+            }else{ 
+                cert = 'Uncertified'; 
+                sts = 1;
+            }
+            const dry =  await Dry.findAll({where:{day_lot_number:day_lot}});
+            console.log("dry",dry) 
+            if(!dry || dry.length=== 0){
+                const saveDry = await Dry.create({
+                    created_at:Date.now(),
+                    certification:cert,
+                    day_lot_number:day_lot,
+                    GradeA:grade_a,
+                    GradeB:grade_b,
+                    GradeC:grade_c,
+                    status:sts,
+                    outturn:0,
+                    moistureA:0,
+                    moistureB:0,
+                    moistureC:0,
+                    gradeATaken:taken_a,
+                    gradeBTaken:taken_b,
+                    gradeCTaken:taken_c,
+                    FinalGradeA:gradeATaken,
+                    FinalGradeB:gradeBTaken,
+                    FinalGradeC:gradeCTaken
+                })
+                console.log("save",saveDry)
+                return res.status(200).json({ status: "success", data: saveDry });
+            }
+            const col = {
+                created_at:Date.now(),
+                certification:cert,
+                GradeA:grade_a,
+                GradeB:grade_b,
+                GradeC:grade_c,
+                status:sts,
+                outturn:0,
+                moistureA:0,
+                moistureB:0,
+                moistureC:0,
+                gradeATaken:taken_a,
+                gradeBTaken:taken_b,
+                gradeCTaken:taken_c,
+                FinalGradeA:gradeATaken,
+                FinalGradeB:gradeBTaken,
+                FinalGradeC:gradeCTaken
+            };
+            console.log("columns",col)
+            const UpdateDry = await Dry.update(col,{where:{day_lot_number:day_lot}})
+            console.log("dfgjern",UpdateDry)
+            return res.status(200).json({
+                status: "success",
+                message: "Bucket data updated successfully !!!",
+                data: UpdateDry 
+            });
+            
+        } catch (error) {
+            return res.status(500).json({ status: "fail", error: error.message });
+
+        }
+    }
+
+//all buckets weighting
+static async getAllBucketWeighting(req,res){
+  try{
+      const allBuckets = await Dry.findAll()
+      if(!allBuckets || allBuckets.length === 0)
+    
+      {
+       
+          return res.status(404).json({
+              status:"fail",
+              message:"no no bucket found",
+              
+          })
+      }
+      return res.status(200).json({
+          status:"success",
+          message:"all buckets retieved successfullt",
+          data:allBuckets
+      })
+
+  } catch(error)
+  {
+      return res.status(500).json({ status: "fail", error: error.message });
+
+  }
+
+  }
+
+
+    /*##############################################
+            Close and Submit Transaction
+    ################################################*/
+    
+    static async CloseAndSubmitTransaction(req, res){
+        try {
+            
+        } catch (error) {
+            
+        }
+    }
+
+
+
 }
 
 export default CoffeePurchaseController;
