@@ -697,7 +697,7 @@ class CoffeePurchaseController {
                 data: combinedData 
             });
         } catch (error) {
-            console.error('Error:', error);
+            return res.status(500).json({ status: "fail", error: error.message });
         }
     }
 
