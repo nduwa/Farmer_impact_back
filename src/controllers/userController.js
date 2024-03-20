@@ -96,6 +96,7 @@ console.log("useudihwefhseu",staffUser)
 const hashedPassword = await bcrypt.hash(req.body.password, 10);
 const __kp_User = generateRandomString(32);
 const _kf_Location = generateRandomString(32);
+
 const updatedUser = await Users.findOne({
   where: { __kp_User: staffUser._kf_User },
 });
