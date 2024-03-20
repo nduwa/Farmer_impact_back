@@ -14,8 +14,5 @@ router.put('/dailyJournal/transaction/update/:id', verifyToken, coffeePuchase.up
 router.post('/dailyJournal/commissions', verifyToken, coffeePuchase.addCommissions)
 router.get('/dailyJournal/daylots', coffeePuchase.getAllDayLot)
 router.put('/dailyJournal/journal/approve/:journalId', verifyToken, coffeePuchase.approveJournal)
-router.post('/dailyJournal/journalBucket',verifyToken,CoffeePurchaseController.AddTransactionBucket)
-router.post('/dailyJournal/journalBucketWeight',verifyToken,CoffeePurchaseController.TransactionBucketWeight)
-router.post('/dailyJournal/CloseSubmitJournal',verifyToken, coffeePuchase.CloseAndSubmitTransaction)
-router.post('/dailyJournal/GeneralHarvest',verifyToken, coffeePuchase.GeneralHarvest)
+
 export default router
