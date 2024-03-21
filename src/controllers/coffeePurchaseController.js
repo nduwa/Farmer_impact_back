@@ -26,7 +26,7 @@ class CoffeePurchaseController {
         const Name = req.user?.staff?.Name;
         const Role = req.user?.staff?.Role;
         if (Role === "System Admin") {
-          s;
+          
           whereCondition = { _kf_Season: kp_season, status: 0 };
         } else {
           const kp_station = req.user?.staff?._kf_Station;
