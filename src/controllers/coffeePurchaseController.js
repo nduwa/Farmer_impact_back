@@ -5,7 +5,7 @@ import Day_lot from "../models/rtc_day_lot_data";
 import Bucket from "../models/bucketing";
 import Dry from "../models/rtc_drying";
 import { generateRandomString } from "../helpers/randomStringGenerator";
-
+import Lock_cherries from '../models/rtc_lock_cherry_lot'
 class CoffeePurchaseController {
   //get all transactions/journals
   static async getSCDailyJournals(req, res) {
@@ -26,7 +26,7 @@ class CoffeePurchaseController {
         const Name = req.user?.staff?.Name;
         const Role = req.user?.staff?.Role;
         if (Role === "System Admin") {
-          s;
+          
           whereCondition = { _kf_Season: kp_season, status: 0 };
         } else {
           const kp_station = req.user?.staff?._kf_Station;
@@ -663,10 +663,136 @@ class CoffeePurchaseController {
             Close and Submit Transaction
     ################################################*/
 
-  static async CloseAndSubmitTransaction(req, res) {
-    try {
-    } catch (error) {}
+    
+    static async CloseAndSubmitTransaction(req, res){
+      try {
+          const cherry_lot_id = '23SR221CH0202UC';
+
+          const Lock_cherry = await Lock_cherries.findAll({
+              where:{
+                  cherry_lot_id:cherry_lot_id
+              }
+          })
+          if(!Lock_cherry || Lock_cherry === 0){
+
+          }
+          const transactionData = await Transaction.findAll({
+              where: { 
+                  cherry_lot_id: cherry_lot_id,
+                  status:0
+              }
+          });
+
+          // Assuming transactionData is an array of objects
+          if (transactionData && transactionData.length > 0) {
+              // Assuming you want to extract data from the first element of the array
+              const firstTransaction = transactionData[0];
+
+              // Accessing individual properties from the first transaction object
+              const kf_station = firstTransaction._kf_Station;
+              const kf_staff = firstTransaction._kf_Staff;
+              const kf_Season = firstTransaction._kf_Season;
+              const kf_Supplier = firstTransaction._kf_Supplier;
+
+              console.log('Season:', kf_Season);
+              // Fetching data from FieldReading model based on kf_Supplier and kf_season
+              const readingData = await FieldReading.findAll({
+                  where: {
+                      _kf_Supplier: kf_Supplier,
+                      _kf_Season: kf_Season
+                  }
+              });
+              if(!readingData || readingData === 0){
+                  console.log('Field Reading:',readingData.length);
+                  console.log('This request has been blocked. Because the supplier is not allowed to transact with RTC');
+              }
+
+              console.log('Readings:', readingData,transactionData);
+          } else {
+              console.log('No transaction data found.');
+          }
+
+      } catch (error) {
+          
+      }
   }
+ 
+  static async GeneralHarvest(req, res){
+    let station = '';
+    let season = '';
+
+    try {
+        if (!station) {
+            const seasonData = await Season.findOne({
+                attributes: ['__kp_Season'],
+                order: [['id', 'DESC']],
+                raw: true,
+                limit: 1,
+                where: { Default: 1 }
+            });
+
+            season = seasonData.__kp_Season;
+        }
+
+        let transactionData, farmerData, groupData, householdData;
+
+        if (station) {
+            transactionData = await Transaction.findAll({
+                where: {
+                    _kf_Season: season,
+                    _kf_Station: station
+                }
+            });
+
+            farmerData = await Farmers.findAll({
+                where: {
+                    _kf_Station: station
+                }
+            });
+
+            groupData = await Groups.findAll({
+                where: {
+                    _kf_Station: station
+                }
+            });
+
+            householdData = await Household.findAll({
+                where: {
+                    _kf_Station: station
+                }
+            });
+        } else {
+            transactionData = await Transaction.findAll({
+                where: {
+                    _kf_Season: season
+                }
+            });
+
+            farmerData = await Farmers.findAll();
+            groupData = await Groups.findAll();
+            householdData = await Household.findAll();
+        }
+
+        // Combine all arrays into one
+        const combinedData = [
+            ...transactionData,
+            ...farmerData,
+            ...groupData,
+            ...householdData
+        ];
+        console.log('Combined Data:', combinedData);
+        return res.status(200).json({
+            status: "success",
+            message: "Harverst retrived successfully !!!",
+            data: combinedData 
+        });
+    } catch (error) {
+        return res.status(500).json({ status: "fail", error: error.message });
+    }
 }
 
+
+
+
+}
 export default CoffeePurchaseController;

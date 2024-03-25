@@ -40,7 +40,7 @@ const Readings = sequelize.define('rtc_readings',{
         allowNull:false
     },
     _kf_Season:{
-        type: DataTypes.DOUBLE,
+        type: DataTypes.STRING,
         allowNull:false
     },
     created_at:{
