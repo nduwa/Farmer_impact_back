@@ -21,15 +21,15 @@ const Drying = sequelize.define('drying',{
         allowNull: false
     },
     GradeA:{
-        type: DataTypes.DOUBLE,
+        type: DataTypes.STRING,
         allowNull: false
     },
     GradeB:{
-        type: DataTypes.DOUBLE,
+        type: DataTypes.STRING,
         allowNull: false
     },
     GradeC:{
-        type: DataTypes.DOUBLE,
+        type: DataTypes.STRING,
         allowNull: false
     },
     status:{
