@@ -20,14 +20,19 @@ mobileSyncRoutes.get(
   mobileSyncController.retrieveTrainingModules
 );
 mobileSyncRoutes.get("/seasons", mobileSyncController.retrieveSeason);
-mobileSyncRoutes.get("/crops", mobileSyncController.retrieveCrops);
 mobileSyncRoutes.get(
   "/inspectionQuestions",
   mobileSyncController.retrieveInspectionQuestions
 );
 mobileSyncRoutes.get(
+  "/inspectionAnswers",
+  mobileSyncController.retrieveAnswers
+);
+mobileSyncRoutes.get(
   "/farmers/:stationId",
   mobileSyncController.retrieveFarmers
 );
+
+mobileSyncRoutes.post("/journal", mobileSyncController.submitJournal);
 
 export default mobileSyncRoutes;
