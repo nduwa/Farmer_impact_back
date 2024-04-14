@@ -20,6 +20,10 @@ const parchGrade = sequelize.define('temp_parchment_grade',{
         type: DataTypes.STRING,
         allowNull:false
     },
+    parchment_lot_id:{
+        type: DataTypes.STRING,
+        allowNull:false
+    },
     parch_grade:{
         type: DataTypes.STRING,
         allowNull:false
