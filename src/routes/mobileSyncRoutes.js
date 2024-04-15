@@ -8,6 +8,10 @@ mobileSyncRoutes.get(
   mobileSyncController.retrieveStations
 );
 mobileSyncRoutes.get(
+  "/suppliers/:stationId",
+  mobileSyncController.retrieveSupplier
+);
+mobileSyncRoutes.get(
   "/houseHolds/:stationId",
   mobileSyncController.retrieveHouseholds
 );
@@ -15,14 +19,20 @@ mobileSyncRoutes.get(
   "/trainingModules",
   mobileSyncController.retrieveTrainingModules
 );
-mobileSyncRoutes.get("/crops", mobileSyncController.retrieveCrops);
+mobileSyncRoutes.get("/seasons", mobileSyncController.retrieveSeason);
 mobileSyncRoutes.get(
   "/inspectionQuestions",
   mobileSyncController.retrieveInspectionQuestions
 );
 mobileSyncRoutes.get(
+  "/inspectionAnswers",
+  mobileSyncController.retrieveAnswers
+);
+mobileSyncRoutes.get(
   "/farmers/:stationId",
   mobileSyncController.retrieveFarmers
 );
+
+mobileSyncRoutes.post("/journal", mobileSyncController.submitJournal);
 
 export default mobileSyncRoutes;
