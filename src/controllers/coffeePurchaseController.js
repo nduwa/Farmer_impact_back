@@ -87,7 +87,6 @@ class CoffeePurchaseController {
           where: {
             _kf_Station: kp_station,
             _kf_Season: kp_season,
-            // Assuming site_day_lot is the field containing the journal ID
             site_day_lot: journalId,
             status: 0,
           },
@@ -566,6 +565,7 @@ class CoffeePurchaseController {
         day_lot,
         certified,
       } = req.body;
+      console.log("bodyy", req.body)
       if (taken_a == "before" || taken_b == "before" || taken_c == "before") {
         TakenX = 0.55;
       } else {
@@ -581,7 +581,11 @@ class CoffeePurchaseController {
         cert = "Uncertified";
         sts = 1;
       }
-      const dry = await Dry.findAll({ where: { day_lot_number: day_lot } });
+      
+      
+      
+      
+      const dry = await Dry.findAll({ where: { day_lot_number: day_lot }});
       console.log("dry", dry);
       if (!dry || dry.length === 0) {
         const saveDry = await Dry.create({
@@ -603,8 +607,116 @@ class CoffeePurchaseController {
           FinalGradeB: gradeBTaken,
           FinalGradeC: gradeCTaken,
         });
-        console.log("save", saveDry);
-        return res.status(200).json({ status: "success", data: saveDry });
+
+        let lot_weight = 0
+
+      const transactions = await Transaction.findAll({
+        where: {
+          cherry_lot_id: day_lot
+        }
+      });
+      transactions.forEach((row)=>{
+        lot_weight += parseFloat(row.kilograms)+ parseFloat(row.bad_kilograms);
+      })
+      if (transactions) {
+        transactions.forEach(async (transaction) => {
+          console.log('Transaction ID:', transaction.id);
+          console.log('Transaction Kilograms:', transaction.kilograms);
+          console.log('Transaction Bad Kilograms:', transaction.bad_kilograms);
+          console.log('Lot Weight:', lot_weight);
+        
+        
+          let updateData = {};
+        
+          
+      let tr_grade_a, tr_grade_b, tr_grade_c;
+      // if (transaction.bad_kilograms === 0) {
+        updateData={
+          gradeA: grade_a * transaction.kilograms / lot_weight,
+          gradeB: grade_b * transaction.kilograms / lot_weight,
+          gradeC: grade_c * transaction.kilograms / lot_weight,
+        }
+      // } else {
+        // updateData = {
+        //   gradeA: 0,
+        //   gradeB: 0,
+        //   gradeC: grade_c * transaction.bad_kilograms / lot_weight
+
+        // }
+       
+      // }
+       
+          console.log('Update Data:', updateData);
+        
+          // Update the transaction in the database
+          try {
+            await Transaction.update(updateData, {
+              where: { id: transaction.id }// Adjust the where condition as needed
+            });
+            console.log(`Transaction ${transaction.id} updated successfully.`);
+          } catch (error) {
+            console.error(`Error updating transaction ${transaction.id}:`, error.message);
+          }
+        });
+        
+      }
+
+        // let lot_weight = 0;
+        // let tr_grade_a, tr_grade_b, tr_grade_c;
+        
+        // Transaction.findAndCountAll({
+        //   where: {
+        //     cherry_lot_id: day_lot
+        //   }
+        // }).then(data => {
+        //   const { count, rows } = data; 
+        //   console.log('Data:', count); 
+          
+        //   if (rows && rows.length > 0) {
+        //     rows.forEach(row => {
+        //       let column = {}
+        //       lot_weight += (parseFloat(row.kilograms)) + (parseFloat(row.bad_kilograms));
+        //       console.log('lotWeight:', lot_weight);
+        
+        //       if (row.bad_kilograms === 0) {
+        //         tr_grade_a = grade_a * row.kilograms / lot_weight;
+        //         tr_grade_b = grade_b * row.kilograms / lot_weight;
+        //         tr_grade_c = grade_c * row.kilograms / lot_weight;
+        //       } else {
+        //         tr_grade_a = 0;
+        //         tr_grade_b = 0;
+        //         tr_grade_c = grade_c * row.bad_kilograms / lot_weight;
+        //       }
+        
+        //       console.log("kilogramas", row.kilograms);
+        //       console.log("bad kilograa", row.bad_kilograms);
+        
+        //        column = {
+        //         gradeA: tr_grade_a,
+        //         gradeB: tr_grade_b,
+        //         gradeC: tr_grade_c
+        //       };
+        
+        //       Transaction.update(column, {
+        //         where: {
+        //           cherry_lot_id: day_lot
+        //         }
+        //       }).then(updatedTransactions => {
+        //         console.log('Updated transactions:', updatedTransactions);
+        //       }).catch(error => {
+        //         console.error('Error updating transactions:', error.message, lot_weight);
+        //       });
+        //     });
+        //   } else {
+        //     console.log('No rows found.');
+        //   }
+        // }).catch(error => {
+        //   console.error('Error fetching data:', error);
+        // });
+        
+        
+        console.log("save", saveDry.GradeA);
+        return res.status(200).json({ status: "success", data: saveDry , });
       }
       const col = {
         created_at: Date.now(),
@@ -624,15 +736,118 @@ class CoffeePurchaseController {
         FinalGradeB: gradeBTaken,
         FinalGradeC: gradeCTaken,
       };
-      console.log("columns", col);
+      console.log("columns", col.GradeA);
       const UpdateDry = await Dry.update(col, {
         where: { day_lot_number: day_lot },
       });
+      let lot_weight = 0
+
+      const transactions = await Transaction.findAll({
+        where: {
+          cherry_lot_id: day_lot
+        }
+      });
+      if (transactions) {
+        transactions.forEach(async (transaction) => {
+          console.log('Transaction ID:', transaction.id);
+          console.log('Transaction Kilograms:', transaction.kilograms);
+          console.log('Transaction Bad Kilograms:', transaction.bad_kilograms);
+          console.log('Lot Weight:', lot_weight);
+          // console.log('Parchweight:', parchweight);
+          lot_weight += (parseFloat(transaction.kilograms)) + (parseFloat(transaction.bad_kilograms));
+        
+          let updateData = {};
+        
+          
+      let tr_grade_a, tr_grade_b, tr_grade_c;
+      // if (row.bad_kilograms === 0) {
+        updateData={
+          gradeA: grade_a * transaction.kilograms / lot_weight,
+          gradeB: grade_b * transaction.kilograms / lot_weight,
+          gradeC: grade_c * transaction.kilograms / lot_weight,
+        }
+      // } else {
+      //   updateData = {
+      //     gradeA: 0,
+      //     gradeB: 0,
+      //     gradeC: grade_c * transaction.bad_kilograms / lot_weight
+
+      //   }
+       
+      // }
+       
+          console.log('Update Data:', updateData);
+        
+          // Update the transaction in the database
+          try {
+            await Transaction.update(updateData, {
+              where: { id: transaction.id }// Adjust the where condition as needed
+            });
+            console.log(`Transaction ${transaction.id} updated successfully.`);
+          } catch (error) {
+            console.error(`Error updating transaction ${transaction.id}:`, error.message);
+          }
+        });
+        
+      }
+// let transactionGrading, lot_weight = 0, kilograms, floaters, tr_grade_a, tr_grade_b, tr_grade_c;
+// Transaction.findAndCountAll({
+//   where: {
+//     cherry_lot_id: day_lot
+//   }
+// }).then(data => {
+//   const { count, rows } = data; 
+//   console.log('Data:', count); 
+
+//   if (rows && rows.length > 0) {
+//     rows.forEach(row => {
+//       let column ={}
+//       lot_weight += (parseFloat(row.kilograms)) + (parseFloat(row.bad_kilograms));
+//       console.log('lotWeight:', lot_weight);
+
+//       let tr_grade_a, tr_grade_b, tr_grade_c;
+//       if (row.bad_kilograms === 0) {
+//         tr_grade_a = grade_a * row.kilograms / lot_weight;
+//         tr_grade_b = grade_b * row.kilograms / lot_weight;
+//         tr_grade_c = grade_c * row.kilograms / lot_weight;
+//       } else {
+//         tr_grade_a = 0;
+//         tr_grade_b = 0;
+//         tr_grade_c = grade_c * row.bad_kilograms / lot_weight;
+//       }
+
+//       console.log("kilogramas", row.kilograms);
+//       console.log("bad kilooo",row.bad_kilograms)
+//        column = {
+//         gradeA: tr_grade_a,
+//         gradeB: tr_grade_b,
+//         gradeC: tr_grade_c
+//       };
+
+//       Transaction.update(column, {
+//         where: {
+//           id: row.id
+//         }
+//       }).then(updatedTransactions => {
+//         console.log('Updated transactions:', updatedTransactions);
+//       }).catch(error => {
+//         console.error('Error updating transactions:', error.message, lot_weight);
+//       });
+//     });
+//   } else {
+//     console.log('No rows found.');
+//   }
+// }).catch(error => {
+//   console.error('Error fetching data:', error);
+// });
+
+      
       console.log("dfgjern", UpdateDry);
       return res.status(200).json({
         status: "success",
         message: "Bucket data updated successfully !!!",
         data: UpdateDry,
+        // transactions:data
       });
     } catch (error) {
       return res.status(500).json({ status: "fail", error: error.message });
