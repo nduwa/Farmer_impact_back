@@ -87,44 +87,44 @@ const Delivery_reports = sequelize.define('rtc_delivery_reports',{
     },
     receiving_form_id:{
         type: DataTypes.INTEGER,
-        allowNull:false
+        allowNull:true
     },
     bag_type:{
         type: DataTypes.STRING,
-        allowNull:false
+        allowNull:true
     },
     total_bags_received:{
         type: DataTypes.INTEGER,
-        allowNull:false
+        allowNull:true
     },
     weight_received_bags:{
         type: DataTypes.DOUBLE,
-        allowNull:false
+        allowNull:true
     },
     weight_parch_received:{
         type: DataTypes.INTEGER,
-        allowNull:false
+        allowNull:true
     },
     gross_weight_parch_received:{
         type: DataTypes.DOUBLE,
-        allowNull:false
+        allowNull:true
     },
     moisture:{
         type: DataTypes.DOUBLE,
-        allowNull:false
+        allowNull:true
     },
     received:{
         type: DataTypes.INTEGER,
-        allowNull:false
+        allowNull:true
     },
     received_at:{
         type: DataTypes.DATE,
         defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
-        allowNull:false
+        allowNull:true
     },
     received_by:{
         type: DataTypes.INTEGER,
-        allowNull:false
+        allowNull:true
     }
 });
 module.exports = Delivery_reports;

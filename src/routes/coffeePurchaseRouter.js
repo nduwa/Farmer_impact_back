@@ -46,6 +46,13 @@ router.post(
   verifyToken,
   coffeePuchase.AddTransactionBucket
 );
+router.put(
+  "/updateBucket",
+  coffeePuchase.updateTransactionBucket
+);
+router.put(
+  "/updateWeight",
+  coffeePuchase.updateTransactionBucketWeight);
 router.post('/bucketweight', coffeePuchase.TransactionBucketWeight)
 router.get('/dryweighting',coffeePuchase.getAllBucketWeighting)
 

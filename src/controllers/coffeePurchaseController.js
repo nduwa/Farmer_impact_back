@@ -544,6 +544,58 @@ class CoffeePurchaseController {
     }
   }
 
+  //Update transaction bucket 
+
+
+
+
+
+
+  static async updateTransactionBucket(req, res) {
+    try{
+
+    const { bucket_a, bucket_b, bucket_c, day_lot } = req.body;
+    const existingBucket = Bucket.findOne({
+      where:{
+        day_lot_number:day_lot
+      }
+    })
+    if (!existingBucket) {
+      return res.status(404).json({
+        status: "fail",
+        message: `This bucket does not exist `,
+      });
+    }
+
+      const col = {
+        bucketA: bucket_a,
+        bucketB: bucket_b,
+        bucketC: bucket_c,
+
+      };
+
+  
+     const updatedBucket= await Bucket.update(col, {
+        where: { day_lot_number: day_lot },
+    });
+      return res.status(200).json({
+        status: "success",
+        message: "Bucket data updated successfully !!!",
+        data: updatedBucket,
+      });
+    } catch (error) {
+      return res.status(500).json({ status: "fail", error: error.message });
+    }
+  }
+
+
+
+
+
+
+
+
+
   /*
             Add transaction bucket weight
     */
@@ -643,7 +695,7 @@ class CoffeePurchaseController {
         //   gradeC: grade_c * transaction.bad_kilograms / lot_weight
 
         // }
-       
+      
       // }
        
           console.log('Update Data:', updateData);
@@ -853,6 +905,133 @@ class CoffeePurchaseController {
       return res.status(500).json({ status: "fail", error: error.message });
     }
   }
+
+
+//update transaction bucket weight
+
+
+
+
+
+static async updateTransactionBucketWeight(req,res) {
+  try{
+    let gradeCTaken = 0;
+    let gradeBTaken = 0;
+    let gradeATaken = 0;
+    let TakenX = 0;
+
+    const {
+      taken_c,
+      grade_c,
+      taken_b,
+      grade_b,
+      taken_a,
+      grade_a,
+      day_lot,
+    } = req.body;
+console.log("hello", req.body)
+    if (taken_a == "before" || taken_b == "before" || taken_c == "before") {
+      TakenX = 0.55;
+    } else {
+      TakenX = 0.45;
+    }
+    gradeATaken = grade_a - 1.2 * (TakenX - 0.12) * grade_a;
+    gradeBTaken = grade_b - 1.2 * (TakenX - 0.12) * grade_b;
+    gradeCTaken = grade_c - 1.2 * (TakenX - 0.12) * grade_c;
+    
+  const existingWeight = Dry.findOne({
+    where:{
+      day_lot_number:day_lot
+    }
+  })
+  if (!existingWeight) {
+    return res.status(404).json({
+      status: "fail",
+      message: `This bucket does not exist `,
+    });
+  }
+
+
+    const col = {
+      GradeA: grade_a,
+      GradeB: grade_b,
+      GradeC: grade_c,
+      gradeATaken: taken_a,
+      gradeBTaken: taken_b,
+      gradeCTaken: taken_c,
+      FinalGradeA: gradeATaken,
+      FinalGradeB: gradeBTaken,
+      FinalGradeC: gradeCTaken
+
+    };
+    let lot_weight = 0
+
+    const transactions = await Transaction.findAll({
+      where: {
+        cherry_lot_id: day_lot
+      }
+    });
+    transactions.forEach((row)=>{
+      lot_weight += parseFloat(row.kilograms)+ parseFloat(row.bad_kilograms);
+    })
+    if (transactions) {
+      transactions.forEach(async (transaction) => {
+        console.log('Transaction ID:', transaction.id);
+        console.log('Transaction Kilograms:', transaction.kilograms);
+        console.log('Transaction Bad Kilograms:', transaction.bad_kilograms);
+        console.log('Lot Weight:', lot_weight);
+      
+      
+        let updateData = {};
+      
+        
+    let tr_grade_a, tr_grade_b, tr_grade_c;
+    // if (transaction.bad_kilograms === 0) {
+      updateData={
+        gradeA: grade_a * transaction.kilograms / lot_weight,
+        gradeB: grade_b * transaction.kilograms / lot_weight,
+        gradeC: grade_c * transaction.kilograms / lot_weight,
+      }
+    // } else {
+      // updateData = {
+      //   gradeA: 0,
+      //   gradeB: 0,
+      //   gradeC: grade_c * transaction.bad_kilograms / lot_weight
+
+      // }
+    
+    // }
+     
+        console.log('Update Data:', updateData);
+      
+        // Update the transaction in the database
+        try {
+          await Transaction.update(updateData, {
+            where: { id: transaction.id }// Adjust the where condition as needed
+          });
+          console.log(`Transaction ${transaction.id} updated successfully.`);
+        } catch (error) {
+          console.error(`Error updating transaction ${transaction.id}:`, error.message);
+        }
+      });
+      
+    }
+
+   const updatedBucketWeight= await Dry.update(col, {
+      where: { day_lot_number: day_lot },
+  });
+    return res.status(200).json({
+      status: "success",
+      message: "Bucket weight updated successfully !!!",
+      data: col,
+    });
+  } catch (error) {
+    return res.status(500).json({ status: "fail", error: error.message });
+  }
+}
+
+
+
 
   //all buckets weighting
   static async getAllBucketWeighting(req, res) {
