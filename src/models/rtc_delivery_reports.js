@@ -1,3 +1,4 @@
+
 const { DataTypes } = require('sequelize');
 import sequelize from '../database/connectDb';
 
@@ -5,7 +6,10 @@ const Delivery_reports = sequelize.define('rtc_delivery_reports',{
     id:{
         type: DataTypes.INTEGER,
         autoIncrement: true,
-        primaryKey: true
+        primaryKey: true,
+        defaultValue:0
+
+        
     },
     created_at:{
         type: DataTypes.DATE,
@@ -87,44 +91,50 @@ const Delivery_reports = sequelize.define('rtc_delivery_reports',{
     },
     receiving_form_id:{
         type: DataTypes.INTEGER,
-        allowNull:false
+        defaultValue: 0,
+        allowNull:true
     },
     bag_type:{
         type: DataTypes.STRING,
-        allowNull:false
+        allowNull:true
     },
     total_bags_received:{
         type: DataTypes.INTEGER,
-        allowNull:false
+        defaultValue: 0,
+        allowNull:true
     },
     weight_received_bags:{
         type: DataTypes.DOUBLE,
-        allowNull:false
+        defaultValue: 0,
+        allowNull:true
     },
     weight_parch_received:{
         type: DataTypes.INTEGER,
-        allowNull:false
+        defaultValue: 0,
+        allowNull:true
     },
     gross_weight_parch_received:{
         type: DataTypes.DOUBLE,
-        allowNull:false
+        defaultValue: 0,
+        allowNull:true
     },
     moisture:{
         type: DataTypes.DOUBLE,
-        allowNull:false
+        allowNull:true
     },
     received:{
         type: DataTypes.INTEGER,
-        allowNull:false
+        allowNull:true
     },
     received_at:{
         type: DataTypes.DATE,
         defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
-        allowNull:false
+        allowNull:true
     },
     received_by:{
         type: DataTypes.INTEGER,
-        allowNull:false
+        defaultValue: 0,
+        allowNull:true
     }
 });
 module.exports = Delivery_reports;
