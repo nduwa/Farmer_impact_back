@@ -34,5 +34,6 @@ mobileSyncRoutes.get(
 );
 
 mobileSyncRoutes.post("/journal", mobileSyncController.submitJournal);
+mobileSyncRoutes.post("/inspection", mobileSyncController.submitInspection);
 
 export default mobileSyncRoutes;
