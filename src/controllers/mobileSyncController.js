@@ -350,10 +350,18 @@ class mobileSyncController {
     try {
       const inspectionData = req.body.inspection;
       const responses = req.body.responses;
+
       if (!inspectionData || !responses) {
         return res.status(400).json({
           status: "fail",
           message: `incomplete data`,
+        });
+      }
+
+      if (!inspectionData._kf_Household) {
+        return res.status(400).json({
+          status: "fail",
+          message: `incomplete data: household id not provided`,
         });
       }
 
@@ -406,6 +414,34 @@ class mobileSyncController {
         return res.status(500).json({
           status: "fail",
           message: `inspection done, responses failed`,
+        });
+
+      const currentHousehold = await households.findOne({
+        where: { __kp_Household: inspectionData._kf_Household },
+      });
+
+      if (!currentHousehold)
+        return res.status(500).json({
+          status: "fail",
+          message: `responses done, household update failed`,
+        });
+
+      const currentDate = new Date();
+      const fourDigitYear = currentDate.getFullYear().toString().slice(-4);
+      const twoDigitMonth = ("0" + (currentDate.getMonth() + 1)).slice(-2);
+      const twoDigitDay = ("0" + currentDate.getDate()).slice(-2);
+
+      let inspectionID = `${fourDigitYear}${twoDigitMonth}${currentHousehold.householdid}`;
+
+      const updatedHoushold = await currentHousehold.update({
+        inspectionId: inspectionID,
+        inspectionStatus: "Active",
+      });
+
+      if (!updatedHoushold)
+        return res.status(500).json({
+          status: "fail",
+          message: `responses done, household update failed`,
         });
 
       return res.status(200).json({
