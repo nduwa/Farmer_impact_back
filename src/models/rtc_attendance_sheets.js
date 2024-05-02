@@ -16,10 +16,6 @@ const Attandance_sheets = sequelize.define('rtc_attendance_sheets',{
         type: DataTypes.STRING,
         allowNull:false
     },
-    uuid:{
-        type: DataTypes.STRING,
-        allowNull:false
-    },
     filepath:{
         type: DataTypes.STRING,
         allowNull:false

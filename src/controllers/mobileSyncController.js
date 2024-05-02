@@ -9,6 +9,8 @@ import seasons from "../models/rtc_seasons";
 import suppliers from "../models/rtc_supplier";
 import transactions from "../models/rtc_transaction";
 import answers from "../models/rtc_inspection_answers";
+import inspection from "../models/rtc_inspections";
+import inspections_responses from "../models/rtc_inspection_responses";
 
 class mobileSyncController {
   static async retrieveSupplier(req, res) {
@@ -337,6 +339,114 @@ class mobileSyncController {
 
       return res.status(200).json({
         status: "success",
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ status: "fail", error });
+    }
+  }
+
+  static async submitInspection(req, res) {
+    try {
+      const inspectionData = req.body.inspection;
+      const responses = req.body.responses;
+
+      if (!inspectionData || !responses) {
+        return res.status(400).json({
+          status: "fail",
+          message: `incomplete data`,
+        });
+      }
+
+      if (!inspectionData._kf_Household) {
+        return res.status(400).json({
+          status: "fail",
+          message: `incomplete data: household id not provided`,
+        });
+      }
+
+      const lastRecord = await inspection.findOne({
+        order: [["id", "DESC"]],
+      });
+
+      let nextId;
+      if (lastRecord) {
+        nextId = lastRecord.id + 1; // Increment the ID
+      } else {
+        nextId = 1; // Set initial ID if no records exist
+      }
+
+      let uploadedDate = new Date();
+
+      const newInspection = await inspection.create({
+        ...inspectionData,
+        ...{ id: nextId, uploaded_at: uploadedDate },
+      });
+
+      if (!newInspection) {
+        return res.status(500).json({
+          status: "fail",
+          message: `inspections failed`,
+        });
+      }
+
+      let lastResponseId = await inspections_responses.findOne({
+        order: [["id", "DESC"]],
+      });
+
+      let processedResponses = [];
+
+      let newid = lastResponseId.id;
+      for (const resp of responses) {
+        let tmpObj = {
+          ...resp,
+          ...{ id: newid + 1, rtc_inspections_id: newInspection.id },
+        };
+        newid++;
+        processedResponses.push(tmpObj);
+      }
+
+      const addedResponses = await inspections_responses.bulkCreate(
+        processedResponses
+      );
+
+      if (!addedResponses)
+        return res.status(500).json({
+          status: "fail",
+          message: `inspection done, responses failed`,
+        });
+
+      const currentHousehold = await households.findOne({
+        where: { __kp_Household: inspectionData._kf_Household },
+      });
+
+      if (!currentHousehold)
+        return res.status(500).json({
+          status: "fail",
+          message: `responses done, household update failed`,
+        });
+
+      const currentDate = new Date();
+      const fourDigitYear = currentDate.getFullYear().toString().slice(-4);
+      const twoDigitMonth = ("0" + (currentDate.getMonth() + 1)).slice(-2);
+      const twoDigitDay = ("0" + currentDate.getDate()).slice(-2);
+
+      let inspectionID = `${fourDigitYear}${twoDigitMonth}${currentHousehold.householdid}`;
+
+      const updatedHoushold = await currentHousehold.update({
+        inspectionId: inspectionID,
+        inspectionStatus: "Active",
+      });
+
+      if (!updatedHoushold)
+        return res.status(500).json({
+          status: "fail",
+          message: `responses done, household update failed`,
+        });
+
+      return res.status(200).json({
+        status: "success",
+        inspectionId: newInspection.id,
       });
     } catch (error) {
       console.log(error);
