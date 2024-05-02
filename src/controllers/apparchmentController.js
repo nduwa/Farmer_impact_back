@@ -180,8 +180,7 @@ class ParchmentController {
             updateData = {
               parchID_B: parchmentLotId,
               state: "in-dry-storage",
-              parchID_B_Weight:
-                (parchweight * parseFloat(transaction.kilograms)) / lot_weight,
+              parchID_B_Weight:(parchweight * parseFloat(transaction.kilograms)) / lot_weight,
               parchIDB_ratio: transaction.gradeB / parchweight,
               parchment_lot_id : parchmentId
 
@@ -214,6 +213,36 @@ class ParchmentController {
           }
         });
       }
+      const tempCherryToUpdate = await parchids.findOne({
+        where:{
+          cherry_lot_id:cherrylotid,
+          grade:parch_grade
+        }
+      })
+if(tempCherryToUpdate){
+  const dataToUpdate = {
+    status:1
+
+  };
+  try {
+    await parchids.update(dataToUpdate, {
+      where: { cherry_lot_id: cherrylotid, grade:parch_grade }, // Adjust the where condition as needed
+    });
+    console.log(
+      `status changed successfully.`
+    );
+  } catch (error) {
+    console.error(
+      `Error changing the status ${parch_grade}:`,
+      error.message
+    );
+  }
+
+}
+
+
+
+
       await newParchGrade.save();
       res.status(200).json({
         success: true,
@@ -248,6 +277,95 @@ class ParchmentController {
       return res.status(500).json({ status: "fail", error: error.message });
     }
   }
+   //Ajust parchment 
+   static async adjustParchment(req, res) {
+    try {
+        const grade = req.body.grade;
+        const kilogram = req.body.kilogram;
+        const cherrylotid = req.body.cherrylotid;
+console.log("boddy",req.body)
+        const parchments = await parchGrade.findOne({
+            where: { cherry_lot_id: cherrylotid }
+        });
+
+        if (!parchments) {
+            return res.status(404).json({
+                status: "fail",
+                message: "No parchments found"
+            });
+        }
+
+        let lot_weight = 0;
+
+        const transactions = await Transaction.findAll({
+            where: { cherry_lot_id: cherrylotid }
+        });
+
+        if (!transactions || transactions.length === 0) {
+            return res.status(404).json({
+                status: "fail",
+                message: "No transactions found for the specified cherry lot ID"
+            });
+        }
+
+        transactions.forEach((row) => {
+            lot_weight += parseFloat(row.kilograms) + parseFloat(row.bad_kilograms);
+        });
+
+        const updates = transactions.map(async (transaction) => {
+            let newData = {};
+            if (grade === "Grade A") {
+                newData = {
+                    gradeA: kilogram,
+                    parchID_A_Weight: (kilogram * parseFloat(transaction.kilograms)) / lot_weight,
+                };
+            } else if (grade === "Grade B") {
+                newData = {
+                    gradeB: kilogram,
+                    parchID_B_Weight: (kilogram * parseFloat(transaction.kilograms)) / lot_weight,
+                };
+            } else {
+                newData = {
+                    gradeC: kilogram,
+                    parchID_C_Weight: (kilogram * parseFloat(transaction.kilograms)) / lot_weight,
+                };
+            }
+
+            console.log("adjust Data:", newData);
+            try {
+                await Transaction.update(newData, {
+                    where: { id: transaction.id },
+                });
+                console.log(`Transaction ${transaction.id} adjusted successfully.`);
+            } catch (error) {
+                console.error(`Error adjusting transaction ${transaction.id}:`, error.message);
+                return res.status(500).json({
+                    status: "error",
+                    message: "Error adjusting transactions"
+                });
+            }
+        });
+
+        await Promise.all(updates); // Wait for all updates to complete
+
+        // Move this inside the if block
+        return res.status(200).json({
+            success: true,
+            message: "Parchment adjusted successfully",
+            data:updates
+        });
+    } catch (error) {
+        console.error("Error adjusting parchments:", error.message);
+        return res.status(500).json({
+            status: "error",
+            message: "Internal server error"
+        });
+    }
+}
+
+
+
+
 
   //get assigned parchment
   static async getAllAssignedParchments(req, res) {
@@ -267,5 +385,7 @@ class ParchmentController {
       console.log("Something went wrong ", error.message);
     }
   }
+
+
 }
 export default ParchmentController;
