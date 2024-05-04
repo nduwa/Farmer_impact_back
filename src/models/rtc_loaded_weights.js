@@ -36,6 +36,10 @@ const loaded_weights = sequelize.define('loaded_weights',{
         type: DataTypes.DOUBLE,
         allowNull:false
     },
+    status:{
+        type: DataTypes.INTEGER,
+        allowNull:false
+    },
     contribution_sent_at:{
         type: DataTypes.DATE,
         defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),

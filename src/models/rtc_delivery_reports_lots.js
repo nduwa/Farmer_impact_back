@@ -5,6 +5,7 @@ const Delivery_Reports_Lots = sequelize.define('rtc_delivery_reports_lots',{
     id:{
         type: DataTypes.INTEGER,
         autoIncrement: true,
+        defaultValue:0,
         primaryKey: true
     },
     created_at:{

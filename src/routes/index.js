@@ -8,6 +8,7 @@ import daylotsRoutes from "./dayLotsRoute";
 import harvestRouter from "./harvestRoute";
 import dryingRoutes from "./dryingRoute";
 import parchmentRoutes from "./parchmentRoute";
+import parchmentTransportRoutes from "./parchmentTransportRoute";
 const router = Router();
 router.use("/user", userRoutes);
 router.use("/accessControl", accessControlRoutes);
@@ -20,5 +21,6 @@ router.use('/lots',daylotsRoutes)
 router.use("/harvests",harvestRouter)
 router.use('/dryings', dryingRoutes)
 router.use('/parchments',parchmentRoutes)
+router.use('/parchmentTransport',parchmentTransportRoutes)
 
 export default router
