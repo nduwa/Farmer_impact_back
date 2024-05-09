@@ -9,6 +9,7 @@ import harvestRouter from "./harvestRoute";
 import dryingRoutes from "./dryingRoute";
 import parchmentRoutes from "./parchmentRoute";
 import parchmentTransportRoutes from "./parchmentTransportRoute";
+import deliveryProcessingRouter from './deliveryProcessingRoutes'
 const router = Router();
 router.use("/user", userRoutes);
 router.use("/accessControl", accessControlRoutes);
@@ -22,5 +23,6 @@ router.use("/harvests",harvestRouter)
 router.use('/dryings', dryingRoutes)
 router.use('/parchments',parchmentRoutes)
 router.use('/parchmentTransport',parchmentTransportRoutes)
+router.use('/loadedWeight', deliveryProcessingRouter)
 
 export default router
