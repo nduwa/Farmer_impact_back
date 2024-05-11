@@ -9,20 +9,22 @@ import harvestRouter from "./harvestRoute";
 import dryingRoutes from "./dryingRoute";
 import parchmentRoutes from "./parchmentRoute";
 import parchmentTransportRoutes from "./parchmentTransportRoute";
-import deliveryProcessingRouter from './deliveryProcessingRoutes'
+import deliveryProcessingRouter from "./deliveryProcessingRoutes";
+import untraceableCoffeeRoute from "./addUntraceableCoffee.route";
+
 const router = Router();
 router.use("/user", userRoutes);
 router.use("/accessControl", accessControlRoutes);
 router.use("/sync", mobileSyncRoutes);
-router.use('/user',userRoutes)
-router.use('/accessControl',accessControlRoutes)
-router.use('/coffeePurchase',CoffeePurchaseRoutes)
-router.use('/station',stationRoutes)
-router.use('/lots',daylotsRoutes)
-router.use("/harvests",harvestRouter)
-router.use('/dryings', dryingRoutes)
-router.use('/parchments',parchmentRoutes)
-router.use('/parchmentTransport',parchmentTransportRoutes)
-router.use('/loadedWeight', deliveryProcessingRouter)
-
-export default router
+router.use("/user", userRoutes);
+router.use("/accessControl", accessControlRoutes);
+router.use("/coffeePurchase", CoffeePurchaseRoutes);
+router.use("/station", stationRoutes);
+router.use("/lots", daylotsRoutes);
+router.use("/harvests", harvestRouter);
+router.use("/dryings", dryingRoutes);
+router.use("/parchments", parchmentRoutes);
+router.use("/parchmentTransport", parchmentTransportRoutes);
+router.use("/loadedWeight", deliveryProcessingRouter);
+router.use("/untraceableCoffee", untraceableCoffeeRoute);
+export default router;
