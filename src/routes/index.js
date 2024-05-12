@@ -11,6 +11,7 @@ import parchmentRoutes from "./parchmentRoute";
 import parchmentTransportRoutes from "./parchmentTransportRoute";
 import deliveryProcessingRouter from "./deliveryProcessingRoutes";
 import untraceableCoffeeRoute from "./addUntraceableCoffee.route";
+import cherryRoutes from "./cherryToRTCRoutes";
 
 const router = Router();
 router.use("/user", userRoutes);
@@ -27,4 +28,5 @@ router.use("/parchments", parchmentRoutes);
 router.use("/parchmentTransport", parchmentTransportRoutes);
 router.use("/loadedWeight", deliveryProcessingRouter);
 router.use("/untraceableCoffee", untraceableCoffeeRoute);
+router.use("/cherrytortc", cherryRoutes);
 export default router;
