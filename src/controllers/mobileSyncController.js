@@ -11,6 +11,8 @@ import transactions from "../models/rtc_transaction";
 import answers from "../models/rtc_inspection_answers";
 import inspection from "../models/rtc_inspections";
 import inspections_responses from "../models/rtc_inspection_responses";
+import training_attendance from "../models/rtc_training_attendance";
+import training_attendance_sheet from "../models/rtc_attendance_sheets";
 
 class mobileSyncController {
   static async retrieveSupplier(req, res) {
@@ -447,6 +449,107 @@ class mobileSyncController {
       return res.status(200).json({
         status: "success",
         inspectionId: newInspection.id,
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ status: "fail", error });
+    }
+  }
+
+  static async submitTraining(req, res) {
+    try {
+      const {
+        id,
+        created_at,
+        training_course_id,
+        __kf_farmer,
+        __kf_group,
+        status,
+        __kf_attendance,
+        username,
+        password,
+        uuid,
+        uploaded_at,
+        _kf_training,
+        lo,
+        la,
+        __kp_Course,
+        Duration,
+        ID_COURSE,
+        Name,
+        Name_rw,
+        Name_fr,
+        filepath,
+        ID_GROUP,
+        participants,
+      } = req.body;
+
+      let attendances = [];
+      let allParticipants = req.body.__kf_farmer;
+      let allGroups = req.body.__kf_group;
+
+      let lastSessionId = await training_attendance.findOne({
+        order: [["id", "DESC"]],
+      });
+
+      let newid = lastSessionId.id;
+      for (const farmer of allParticipants) {
+        let tmpObj = {
+          id: newid + 1,
+          created_at,
+          training_course_id,
+          __kf_farmer: farmer,
+          __kf_group: allGroups[allParticipants.indexOf(farmer)],
+          status: 1,
+          __kf_attendance,
+          username,
+          password,
+          uuid,
+          uploaded_at: new Date(),
+          _kf_training,
+          lo,
+          la,
+        };
+
+        newid++;
+        attendances.push(tmpObj);
+      }
+
+      const addedAttendances = await training_attendance.bulkCreate(
+        attendances
+      );
+
+      if (!addedAttendances)
+        return res.status(500).json({
+          status: "fail",
+          message: `attendance sessions failed`,
+        });
+
+      let lastSheetId = await training_attendance_sheet.findOne({
+        order: [["id", "DESC"]],
+      });
+
+      let newSheetid = lastSheetId.id;
+
+      const addedAttendanceSheet = await training_attendance_sheet.create({
+        id: newSheetid + 1,
+        created_at,
+        uuid,
+        filepath,
+        status: 1,
+        uploaded_at: new Date(),
+      });
+
+      if (!addedAttendanceSheet)
+        return res.status(500).json({
+          status: "fail",
+          message: `attendance sessions done, sheets failed`,
+        });
+
+      return res.status(200).json({
+        status: "success",
+        _kf_training,
+        uuid,
       });
     } catch (error) {
       console.log(error);

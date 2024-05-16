@@ -1,6 +1,37 @@
 import express from "express";
 import mobileSyncController from "../controllers/mobileSyncController.js";
+import multer from "multer";
+import fs from "fs";
+
 const mobileSyncRoutes = express.Router();
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    let str = req.query.filepath;
+    const splitStr = str.split("/");
+    splitStr.pop();
+    const dir = splitStr.join("/");
+    const directory = `${dir}`;
+
+    if (!fs.existsSync(directory)) {
+      fs.mkdirSync(directory, { recursive: true });
+    }
+
+    cb(null, directory);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith("image")) {
+    cb(null, true);
+  } else {
+    cb(null, false);
+  }
+};
+
+const upload = multer({ storage, fileFilter });
 
 mobileSyncRoutes.get("/groups/:stationId", mobileSyncController.retrieveGroups);
 mobileSyncRoutes.get(
@@ -31,6 +62,15 @@ mobileSyncRoutes.get(
 mobileSyncRoutes.get(
   "/farmers/:stationId",
   mobileSyncController.retrieveFarmers
+);
+
+mobileSyncRoutes.post(
+  "/training",
+  upload.single("attendance_sheet"),
+  (req, res, next) => {
+    next();
+  },
+  mobileSyncController.submitTraining
 );
 
 mobileSyncRoutes.post("/journal", mobileSyncController.submitJournal);

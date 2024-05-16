@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json({ limit: '10mb' })); 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 sequelize.sync()
 app.listen(PORT, () => {
   console.log(`Server Started at :${PORT}`);
