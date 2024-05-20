@@ -18,6 +18,7 @@ import groupsRouter from "./groupsRoutes";
 import householdRouter from "./householdsRoute";
 import trainingsRouter from "./trainingRoutes";
 import attendanceRouter from "./attendanceRoutes";
+import FarmerRouter from "./recentFarmerRoutes";
 
 const router = Router();
 router.use("/user", userRoutes);
@@ -41,4 +42,6 @@ router.use("/groups", groupsRouter);
 router.use("/households",householdRouter);
 router.use("/trainings",trainingsRouter);
 router.use("/attendance",attendanceRouter);
-export default router;
+router.use("/user_registration", FarmerRouter)
+
+export default router
