@@ -48,6 +48,7 @@ router.post(
 );
 router.post('/bucketweight', coffeePuchase.TransactionBucketWeight)
 router.get('/dryweighting',coffeePuchase.getAllBucketWeighting)
+//router.put('/closeAndSubmit/:cherryLotId',coffeePuchase.CloseAndSubmitTransaction)
 
 
 export default router;
