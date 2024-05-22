@@ -32,7 +32,7 @@ const Field_farmer = sequelize.define('rtc_field_farmers',{
         allowNull: false
     },
     farmer_name:{
-        type: DataTypes.INTEGER,
+        type: DataTypes.STRING,
         allowNull: false
     },
     Gender:{
@@ -62,6 +62,11 @@ const Field_farmer = sequelize.define('rtc_field_farmers',{
     village:{
         type: DataTypes.STRING,
         allowNull: false
+    },
+    status:{
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue:"new"
     },
     cell:{
         type: DataTypes.STRING,
