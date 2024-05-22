@@ -19,6 +19,7 @@ import householdRouter from "./householdsRoute";
 import trainingsRouter from "./trainingRoutes";
 import attendanceRouter from "./attendanceRoutes";
 import FarmerRouter from "./recentFarmerRoutes";
+import UserAccessRouter from "./userAccessRoute";
 
 const router = Router();
 router.use("/user", userRoutes);
@@ -39,9 +40,10 @@ router.use("/cherrytortc", cherryRoutes);
 router.use("/inspections", inspectionsRouter);
 router.use("/farmers", farmersRouter);
 router.use("/groups", groupsRouter);
-router.use("/households",householdRouter);
-router.use("/trainings",trainingsRouter);
-router.use("/attendance",attendanceRouter);
-router.use("/user_registration", FarmerRouter)
+router.use("/households", householdRouter);
+router.use("/trainings", trainingsRouter);
+router.use("/attendance", attendanceRouter);
+router.use("/user_registration", FarmerRouter);
+router.use("/useraccess", UserAccessRouter);
 
-export default router
+export default router;
