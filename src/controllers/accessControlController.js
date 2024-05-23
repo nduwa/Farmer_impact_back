@@ -62,6 +62,28 @@ class AccessControlController {
       res.status(500).json({ success: false, message: "Internal server error" });
     }
   }
+
+
+  static async createModule(req, res) {
+    try {
+
+      const newModule = await Mobile_App_Modules.create({
+        module_name:req.body.module_name,
+        platform:req.body.platform
+      });
+
+      return res.status(201).json({
+        status: "success",
+        message: "module created successfully",
+        data: newModule,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: "fail",
+        error: error.message,
+      });
+    }
+  }
   
   
   static async editModule(req, res) {
