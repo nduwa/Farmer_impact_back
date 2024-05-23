@@ -24,32 +24,46 @@ class AccessControlController {
 
   static async assignPermissionsToUser(req, res) {
     try {
-      const permissions = new Mobile_App({
-        userid: req.body.userid,
-        moduleid: req.body.moduleid,
-        view_record: req.body.view_record,
-        add_record: req.body.add_record,
-        delete_record: req.body.delete_record,
-        edit_record: req.body.edit_record,
-        platform: req.body.platform,
-      });
-      await permissions.save();
-
-      res
-        .status(200)
-        .json({
-          success: true,
-          message: "Permissions assigned successfully",
-          data: permissions,
+      const permissionsArray = req.body; // Assuming the array is sent directly in the body
+  
+      // Validate that permissionsArray is an array
+      if (!Array.isArray(permissionsArray)) {
+        return res.status(400).json({
+          success: false,
+          message: "Permissions should be an array of objects",
         });
+      }
+  
+      const savedPermissions = [];
+  
+      // Loop through the array and save each permission
+      for (const permissionData of permissionsArray) {
+        const permission = Mobile_App.build({
+          userid: permissionData.userid,
+          moduleid: permissionData.moduleid,
+          view_record: permissionData.view_record,
+          add_record: permissionData.add_record,
+          delete_record: permissionData.delete_record,
+          edit_record: permissionData.edit_record,
+          platform: permissionData.platform,
+        });
+  
+        const savedPermission = await permission.save();
+        savedPermissions.push(savedPermission);
+      }
+  
+      res.status(200).json({
+        success: true,
+        message: "Permissions assigned successfully",
+        data: savedPermissions,
+      });
     } catch (error) {
       console.error("Error assigning permissions:", error.message);
-      res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
+      res.status(500).json({ success: false, message: "Internal server error" });
     }
   }
-
+  
+  
   static async editModule(req, res) {
     try {
       const id = req.query.id;

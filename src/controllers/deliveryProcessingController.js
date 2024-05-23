@@ -1,48 +1,49 @@
-import loaded_weights from '../models/rtc_loaded_weights'
-import Temp_contribution from '../models/rtc_temp_contributions'
+import loaded_weights from "../models/rtc_loaded_weights";
+import Temp_contribution from "../models/rtc_temp_contributions";
 class DeliveryProcesingController {
   static async getLoadedWeightById(req, res) {
     try {
-      const id = req.params.id
-      console.log("deliveryReport", id)
+      const id = req.params.id;
+      console.log("deliveryReport", id);
       const loadedWeights = await loaded_weights.findAll({
         where: {
-          rtc_delivery_reports_id: id
-        }
-      })
+          rtc_delivery_reports_id: id,
+        },
+      });
       if (!loadedWeights || loadedWeights.length === 0) {
         return res.status(404).json({
           status: "success",
-          message: "No loaded weights!!!"
-        })
+          message: "No loaded weights!!!",
+        });
       }
       // console.log("loadee", loadedWeights)
       return res.status(200).json({
         status: "success",
         message: "Loaded weight retrieved successfully!!!",
-        data: loadedWeights
-      })
+        data: loadedWeights,
+      });
     } catch (error) {
-      console.error("Error in getLoadedWeightById:", error)
+      console.error("Error in getLoadedWeightById:", error);
       return res.status(500).json({
         status: "error",
-        message: "Internal server error"
-      })
+        message: "Internal server error",
+      });
     }
   }
 
   static async startProcessing(req, res) {
     try {
       const contributions = req.body;
-  console.log("i am contributions", req.body)
+      console.log("i am contributions", req.body);
       // Check if contributions is an array
       if (!Array.isArray(contributions)) {
         return res.status(400).json({
           success: false,
-          message: "Invalid request format. Expected an array of contributions.",
+          message:
+            "Invalid request format. Expected an array of contributions.",
         });
       }
-  
+
       // Map contributions to process them
       const contributionProcessed = contributions.map((contribution) => ({
         certification: contribution.Certification,
@@ -67,10 +68,12 @@ class DeliveryProcesingController {
         // ended_at: "000", // Default value of "000"
         rtc_delivery_reports_id: contribution.rtc_delivery_reports_id,
       }));
-  
+
       // Bulk create processed contributions
-      const createdContribution = await Temp_contribution.bulkCreate(contributionProcessed);
-  
+      const createdContribution = await Temp_contribution.bulkCreate(
+        contributionProcessed
+      );
+
       // Return success response
       return res.status(200).json({
         success: true,
@@ -87,61 +90,59 @@ class DeliveryProcesingController {
       });
     }
   }
-  
 
   static async getProcessedContributions(req, res) {
     try {
-      
-      const processedContributions = await Temp_contribution.findAll()
+      const processedContributions = await Temp_contribution.findAll();
       if (!processedContributions || processedContributions.length === 0) {
         return res.status(404).json({
           status: "success",
-          message: "No processed contributions!!!"
-        })
+          message: "No processed contributions!!!",
+        });
       }
       // console.log("loadee", loadedWeights)
       return res.status(200).json({
         status: "success",
         message: "Processed contributions retieved successfully!!!",
-        data: processedContributions
-      })
+        data: processedContributions,
+      });
     } catch (error) {
-      console.error("Error in retieving processed contributions:", error)
+      console.error("Error in retieving processed contributions:", error);
       return res.status(500).json({
         status: "error",
-        message: "Internal server error"
-      })
+        message: "Internal server error",
+      });
     }
   }
 
   static async getProcessedContributionById(req, res) {
     try {
-      const id = req.params.id
-      console.log("deliveryReport", id)
+      const id = req.params.id;
+      console.log("deliveryReport", id);
       const processedContribution = await Temp_contribution.findAll({
         where: {
-          rtc_delivery_reports_id: id
-        }
-      })
+          rtc_delivery_reports_id: id,
+        },
+      });
       if (!processedContribution || processedContribution.length === 0) {
         return res.status(404).json({
           status: "success",
-          message: "No processed contributions!!!"
-        })
+          message: "No processed contributions!!!",
+        });
       }
       // console.log("loadee", loadedWeights)
       return res.status(200).json({
         status: "success",
         message: "Processed contributions retrieved successfully!!!",
-        data: processedContribution
-      })
+        data: processedContribution,
+      });
     } catch (error) {
-      console.error("Error in getLoadedWeightById:", error)
+      console.error("Error in getLoadedWeightById:", error);
       return res.status(500).json({
         status: "error",
-        message: "Internal server error"
-      })
+        message: "Internal server error",
+      });
     }
   }
 }
-export default DeliveryProcesingController
+export default DeliveryProcesingController;
