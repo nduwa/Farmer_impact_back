@@ -4,6 +4,7 @@ const accessControlRoutes = express.Router()
 
 accessControlRoutes.get('/allAccessControl', AccessControlController.getAllAccessControl)
 accessControlRoutes.post('/assignPermissions', AccessControlController.assignPermissionsToUser)
+accessControlRoutes.put('/update', AccessControlController.editModule)
 
 
 
