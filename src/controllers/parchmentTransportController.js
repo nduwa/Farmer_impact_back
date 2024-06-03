@@ -64,49 +64,49 @@ class ParchmentTransportController {
         driver_licence_or_national_id: req.body.driver_licence_or_national_id,
       });
 
-            //get parchment with parchment id
-            const parchment = await parchGrade.findOne({
-              where: {
-                parchment_id: parch_lot_ID,
-              },
-            });
+      //get parchment with parchment id
+      const parchment = await parchGrade.findOne({
+        where: {
+          parchment_id: parch_lot_ID,
+        },
+      });
 
-            if (!parchment) {
-              return res.status(404).json({
-                message: "no such parchment available ",
-              });
-            }
-            const parchweight = parchment.parch_weight;
+      if (!parchment) {
+        return res.status(404).json({
+          message: "no such parchment available ",
+        });
+      }
+      const parchweight = parchment.parch_weight;
 
-            const existingDeliveryReport = await Delivery_Reports_Lots.findAll({
-              where: {
-                parch_lot_ID: parch_lot_ID,
-              },
-            });
-            let weightLeft;
-            let totalExistingWeight = 0; // Initialize totalExistingWeight to 0
-            
-            if (Array.isArray(existingDeliveryReport) && existingDeliveryReport.length > 0) {
-              existingDeliveryReport.forEach((report) => {
-                totalExistingWeight += report.weight;
-              });
-              console.log("totalExistingWeight", totalExistingWeight);
-            
-              const remainingWeight = parchweight - totalExistingWeight;
-              weightLeft =  remainingWeight - newDeliveryReport.weight ;
-            } else {
-              weightLeft = parchweight - newDeliveryReport?.weight;
-            }
-            
-            console.log("weightsss", newDeliveryReport.weight, parchweight, weightLeft);
-            
-            if (newDeliveryReport?.weight > parchweight) {
-              return res.status(400).json({
-                status: "fail",
-                message: `Weight can not exceed ${parchweight}`,
-              });
-            }
-       const newDeliveryReportLots = new Delivery_Reports_Lots({
+      const existingDeliveryReport = await Delivery_Reports_Lots.findAll({
+        where: {
+          parch_lot_ID: parch_lot_ID,
+        },
+      });
+      let weightLeft;
+      let totalExistingWeight = 0; // Initialize totalExistingWeight to 0
+
+      if (
+        Array.isArray(existingDeliveryReport) &&
+        existingDeliveryReport.length > 0
+      ) {
+        existingDeliveryReport.forEach((report) => {
+          totalExistingWeight += report.weight;
+        });
+
+        const remainingWeight = parchweight - totalExistingWeight;
+        weightLeft = remainingWeight - newDeliveryReport.weight;
+      } else {
+        weightLeft = parchweight - newDeliveryReport?.weight;
+      }
+
+      if (newDeliveryReport?.weight > parchweight) {
+        return res.status(400).json({
+          status: "fail",
+          message: `Weight can not exceed ${parchweight}`,
+        });
+      }
+      const newDeliveryReportLots = new Delivery_Reports_Lots({
         created_by: UserID,
         rtc_transactionid: transactionid,
         weight: newDeliveryReport.weight,
@@ -120,209 +120,191 @@ class ParchmentTransportController {
         grade: req.body.grade,
       });
 
-     
-     
-
       // const existingDeliveryReport = await Delivery_Reports_Lots.findOne({
       //   where: {
       //     parch_lot_ID: parch_lot_ID,
       //   },
       // });
-  
 
+      // no existing delivery report
 
+      if (!existingDeliveryReport) {
+        const transactions = await Transaction.findAll({
+          where: {
+            [Op.or]: [
+              { parchID_A: parch_lot_ID },
+              { parchID_B: parch_lot_ID },
+              { parchID_C: parch_lot_ID },
+            ],
+          },
+        });
 
+        if (transactions) {
+          transactions.forEach(async (transaction) => {
+            let col = {};
+            let loadedWeightCol = {};
+            col = {
+              loaded: 1,
+              state: "in-transit",
+            };
 
-     // no existing delivery report
-    
-if(!existingDeliveryReport)
-{
-  const transactions = await Transaction.findAll({
-    where: {
-      [Op.or]: [
-        { parchID_A: parch_lot_ID },
-        { parchID_B: parch_lot_ID },
-        { parchID_C: parch_lot_ID },
-      ],
-    },
-  });
+            let weight_loaded = 0;
+            let weight_left = 0;
+            let total_weight_left = 0;
 
-  if (transactions) {
-    transactions.forEach(async (transaction) => {
-      let col = {};
-      let loadedWeightCol = {};
-      col = {
-        loaded: 1,
-        state: "in-transit",
-      };
+            if (parch_lot_ID === transaction.parchID_A) {
+              weight_loaded =
+                (newDeliveryReport.weight *
+                  parseFloat(transaction.parchID_A_Weight)) /
+                parchweight;
+              weight_left = transaction.parchID_A_Weight - weight_loaded;
+              total_weight_left = transaction.parchID_A_Weight - weight_loaded;
+            } else if (parch_lot_ID === transaction.parchID_B) {
+              weight_loaded =
+                (newDeliveryReport.weight *
+                  parseFloat(transaction.parchID_B_Weight)) /
+                parchweight;
+              weight_left = transaction.parchID_B_Weight - weight_loaded;
+              total_weight_left = transaction.parchID_B_Weight - weight_loaded;
+            } else {
+              weight_loaded =
+                (newDeliveryReport.weight *
+                  parseFloat(transaction.parchID_C_Weight)) /
+                parchweight;
+              weight_left = transaction.parchID_C_Weight - weight_loaded;
+              total_weight_left = transaction.parchID_C_Weight - weight_loaded;
+            }
 
-      let weight_loaded = 0;
-      let weight_left = 0;
-      let total_weight_left = 0;
+            loadedWeightCol = {
+              created_by: UserID,
+              rtc_delivery_reports_id: maxId,
+              rtc_transaction_id: transaction.id,
+              weight_loaded: weight_loaded,
+              weight_left: weight_left,
+              total_weight_left: total_weight_left,
+              status: 0,
+            };
 
-      if (parch_lot_ID === transaction.parchID_A) {
-        weight_loaded =
-          (newDeliveryReport.weight *
-            parseFloat(transaction.parchID_A_Weight)) /
-          parchweight;
-        weight_left = transaction.parchID_A_Weight - weight_loaded;
-        total_weight_left = transaction.parchID_A_Weight - weight_loaded;
-      } else if (parch_lot_ID === transaction.parchID_B) {
-        weight_loaded =
-          (newDeliveryReport.weight *
-            parseFloat(transaction.parchID_B_Weight)) /
-          parchweight;
-        weight_left = transaction.parchID_B_Weight - weight_loaded;
-        total_weight_left = transaction.parchID_B_Weight - weight_loaded;
-      } else {
-        weight_loaded =
-          (newDeliveryReport.weight *
-            parseFloat(transaction.parchID_C_Weight)) /
-          parchweight;
-        weight_left = transaction.parchID_C_Weight - weight_loaded;
-        total_weight_left = transaction.parchID_C_Weight - weight_loaded;
+            try {
+              await Transaction.update(col, {
+                where: { id: transaction.id },
+              });
+              await loaded_weights.create(loadedWeightCol);
+            } catch (error) {
+              console.error(
+                `Error updating transaction ${transaction.id}:`,
+                error.message
+              );
+              return res.status(400).json({
+                message: `an error occured ${error.message}`,
+              });
+            }
+          });
+        }
+
+        await newDeliveryReport.save();
+
+        await newDeliveryReportLots.save();
+        res.status(200).json({
+          success: true,
+          message: "Parchment delivery report added successfully",
+          data: newDeliveryReportLots,
+        });
       }
 
-      loadedWeightCol = {
-        created_by: UserID,
-        rtc_delivery_reports_id: maxId,
-        rtc_transaction_id: transaction.id,
-        weight_loaded: weight_loaded,
-        weight_left: weight_left,
-        total_weight_left: total_weight_left,
-        status: 0,
-      };
-      // console.log("loadedWeightCol", loadedWeightCol);
-      try {
-        await Transaction.update(col, {
-          where: { id: transaction.id },
-        });
-        await loaded_weights.create(loadedWeightCol);
-      } catch (error) {
-        console.error(
-          `Error updating transaction ${transaction.id}:`,
-          error.message
-        );
+      // if (existingDeliveryReport) {
+      let totalWeight = 0;
+      existingDeliveryReport.forEach((report) => {
+        totalWeight += report.weight;
+      });
+      // const existingWeight = existingDeliveryReport?.weight;
+
+      if (totalWeight >= parchweight) {
         return res.status(400).json({
-          message: `an error occured ${error.message}`,
+          status: "fail",
+          message: "you have already delivered all weight of this parchment",
         });
       }
-    });
-  }
 
-  await newDeliveryReport.save();
+      const remainingWeight = parchweight - totalWeight;
 
-    
-  await newDeliveryReportLots.save();
-  res.status(200).json({
-    success: true,
-    message: "Parchment delivery report added successfully",
-    data: newDeliveryReportLots,
-  });
-}
-
-// if (existingDeliveryReport) {
-  let totalWeight = 0
-  existingDeliveryReport.forEach((report)=>{
-    totalWeight += report.weight
-  })
-  // const existingWeight = existingDeliveryReport?.weight;
-
-  if (totalWeight >= parchweight) {
-    return res.status(400).json({
-      status: "fail",
-      message: "you have already delivered all weight of this parchment",
-    });
-  }
-
-  const remainingWeight = parchweight - totalWeight;
-
-  if (newDeliveryReport?.weight > remainingWeight) {
-    return res.status(400).json({
-      message: `the remaining weight should be ${remainingWeight}`,
-    });
-  }
-  
-  
-  else {
-    const transactions = await Transaction.findAll({
-      where: {
-        [Op.or]: [
-          { parchID_A: parch_lot_ID },
-          { parchID_B: parch_lot_ID },
-          { parchID_C: parch_lot_ID },
-        ],
-      },
-    });
-   
-      if (transactions) {
-        transactions.forEach(async (transaction) => {
-         
-          let loadedWeightCol = {};
-         
-
-          let weight_loaded = 0;
-          let weight_left = 0;
-          let total_weight_left = 0;
-
-          if (parch_lot_ID === transaction.parchID_A) {
-            weight_loaded =
-              (newDeliveryReport.weight *
-                parseFloat(transaction.parchID_A_Weight)) /
-              remainingWeight;
-            weight_left = transaction.parchID_A_Weight - weight_loaded;
-            total_weight_left = transaction.parchID_A_Weight - weight_loaded;
-          } else if (parch_lot_ID === transaction.parchID_B) {
-            weight_loaded =
-              (newDeliveryReport.weight *
-                parseFloat(transaction.parchID_B_Weight)) /
-              remainingWeight;
-            weight_left = transaction.parchID_B_Weight - weight_loaded;
-            total_weight_left = transaction.parchID_B_Weight - weight_loaded;
-          } else {
-            weight_loaded =
-              (newDeliveryReport.weight *
-                parseFloat(transaction.parchID_C_Weight)) /
-              remainingWeight;
-            weight_left = transaction.parchID_C_Weight - weight_loaded;
-            total_weight_left = transaction.parchID_C_Weight - weight_loaded;
-          }
-
-          loadedWeightCol = {
-            created_by: UserID,
-            rtc_delivery_reports_id: maxId,
-            rtc_transaction_id: transaction.id,
-            weight_loaded: weight_loaded,
-            weight_left: weight_left,
-            total_weight_left: total_weight_left,
-            status: 0,
-          };
-          // console.log("loadedWeightCol", loadedWeightCol);
-          try {
-            const newLoadedWeight = await loaded_weights.create(loadedWeightCol);
-            // console.log("New loaded weight created:", newLoadedWeight);
-          } catch (error) {
-            console.error("Error creating new loaded weight:", error.message);
-            return res.status(400).json({
-              message: `An error occurred: ${error.message}`,
-            });
-          }
-          
+      if (newDeliveryReport?.weight > remainingWeight) {
+        return res.status(400).json({
+          message: `the remaining weight should be ${remainingWeight}`,
         });
-      
-    }
-    await newDeliveryReport.save();
-    await newDeliveryReportLots.save();
+      } else {
+        const transactions = await Transaction.findAll({
+          where: {
+            [Op.or]: [
+              { parchID_A: parch_lot_ID },
+              { parchID_B: parch_lot_ID },
+              { parchID_C: parch_lot_ID },
+            ],
+          },
+        });
 
-    return res.status(200).json({
-      message: "reports updated successfully",
-      data: newDeliveryReport,
-      data3: newDeliveryReportLots,
-    
-    });
-  }
+        if (transactions) {
+          transactions.forEach(async (transaction) => {
+            let loadedWeightCol = {};
 
-  
+            let weight_loaded = 0;
+            let weight_left = 0;
+            let total_weight_left = 0;
+
+            if (parch_lot_ID === transaction.parchID_A) {
+              weight_loaded =
+                (newDeliveryReport.weight *
+                  parseFloat(transaction.parchID_A_Weight)) /
+                remainingWeight;
+              weight_left = transaction.parchID_A_Weight - weight_loaded;
+              total_weight_left = transaction.parchID_A_Weight - weight_loaded;
+            } else if (parch_lot_ID === transaction.parchID_B) {
+              weight_loaded =
+                (newDeliveryReport.weight *
+                  parseFloat(transaction.parchID_B_Weight)) /
+                remainingWeight;
+              weight_left = transaction.parchID_B_Weight - weight_loaded;
+              total_weight_left = transaction.parchID_B_Weight - weight_loaded;
+            } else {
+              weight_loaded =
+                (newDeliveryReport.weight *
+                  parseFloat(transaction.parchID_C_Weight)) /
+                remainingWeight;
+              weight_left = transaction.parchID_C_Weight - weight_loaded;
+              total_weight_left = transaction.parchID_C_Weight - weight_loaded;
+            }
+
+            loadedWeightCol = {
+              created_by: UserID,
+              rtc_delivery_reports_id: maxId,
+              rtc_transaction_id: transaction.id,
+              weight_loaded: weight_loaded,
+              weight_left: weight_left,
+              total_weight_left: total_weight_left,
+              status: 0,
+            };
+
+            try {
+              const newLoadedWeight = await loaded_weights.create(
+                loadedWeightCol
+              );
+            } catch (error) {
+              console.error("Error creating new loaded weight:", error.message);
+              return res.status(400).json({
+                message: `An error occurred: ${error.message}`,
+              });
+            }
+          });
+        }
+        await newDeliveryReport.save();
+        await newDeliveryReportLots.save();
+
+        return res.status(200).json({
+          message: "reports updated successfully",
+          data: newDeliveryReport,
+          data3: newDeliveryReportLots,
+        });
+      }
     } catch (error) {
       console.log("Something went wrong ", error);
       res.status(500).json({
@@ -331,18 +313,6 @@ if(!existingDeliveryReport)
       });
     }
   }
-
-
-
-
-
-
-
-
-
-
-
-
 
   //get delivery repots
   static async getDeliveryReports(req, res) {
@@ -369,15 +339,13 @@ if(!existingDeliveryReport)
     }
   }
 
-//get the lastest report by parch id
+  //get the lastest report by parch id
 
-  static async getDeliveryReportLots (req,res){
-    try{
-
-    // let parch_lot_ID = req.query.parch_lot_ID;
+  static async getDeliveryReportLots(req, res) {
+    try {
+      // let parch_lot_ID = req.query.parch_lot_ID;
       // const maximumId = await Delivery_reports.max("id");
-      const reportsLots  = await Delivery_Reports_Lots.findAll({
-      });
+      const reportsLots = await Delivery_Reports_Lots.findAll({});
       if (!reportsLots) {
         return res.status(404).json({
           status: "fail",
@@ -390,171 +358,148 @@ if(!existingDeliveryReport)
         message: "all delivery report retireved successfully",
         data: reportsLots,
       });
-
-    }catch(error){
-
-    }
-
+    } catch (error) {}
   }
 
+  //derivery report lot by id
 
-//derivery report lot by id
+  static async getDeliveryReportLotById(req, res) {
+    try {
+      const id = req.params.id;
 
-static async getDeliveryReportLotById(req,res){
-  try{
-    const id = req.params.id
-  console.log("iddddd", req.params)
-  const deliveryReportLot = await Delivery_Reports_Lots.findAll({
-    where:{
-      delivery_reportid:id
-    }
-  })
-if(!deliveryReportLot){
-  return res.status(404).json({
-    status:"fail",
-    message:"no delivery report lot found"
-  })
-}
-
-return res.status(200).json({
-
-  status:"success",
-  message:"Delivery report lot retrieved successfully !!!",
-  data: deliveryReportLot
-})
-
-  }catch(error){
-    console.log("some thing went wrong", error)
-    return res.status(500).json({
-      status:"fail",
-      message:`Internal server error ${error.message}`
-    })
-
-  }
-}
-
-//delivery report by id 
-
-
-
-static async getDeliveryReportById(req,res){
-  try{
-  const id = req.params.id
-  const deliveryReport = await Delivery_reports.findOne({
-    where:{
-      id:id
-    }
-  })
-if(!deliveryReport){
-  return res.status(404).json({
-    status:"fail",
-    message:"no delivery report lot found"
-  })
-}
-
-return res.status(200).json({
-
-  status:"success",
-  message:"Delivery report  retrieved successfully !!!",
-  data: deliveryReport
-})
-
-  }catch(error){
-    console.log("some thing went wrong", error)
-    return res.status(500).json({
-      status:"fail",
-      message:`Internal server error ${error.message}`
-    })
-
-  }
-}
-
-//update delivery report
-static async updateDeliveryReport(req,res){
-  try{
-    const id = req.params.id
-    const UserID = req.user?.user.id;
-    const total_bags_received =req.body.total_bags_received
-    console.log("bag we", total_bags_received)
-    const weight_parch_received=  req.body.weight_parch_received;
-    console.log("we parch re", weight_parch_received)
-
-    const reportToUpdate = Delivery_reports.findOne({
-      where:{
-        id:id
+      const deliveryReportLot = await Delivery_Reports_Lots.findAll({
+        where: {
+          delivery_reportid: id,
+        },
+      });
+      if (!deliveryReportLot) {
+        return res.status(404).json({
+          status: "fail",
+          message: "no delivery report lot found",
+        });
       }
-    })
-    if(!reportToUpdate)
-    {
-      return res.status(404).json({
 
-        status:"fail",
-        message:"Report you want to update does not exist !!!"
-      })
+      return res.status(200).json({
+        status: "success",
+        message: "Delivery report lot retrieved successfully !!!",
+        data: deliveryReportLot,
+      });
+    } catch (error) {
+      console.log("some thing went wrong", error);
+      return res.status(500).json({
+        status: "fail",
+        message: `Internal server error ${error.message}`,
+      });
     }
-const bag_weigth = total_bags_received * parseFloat(0.166666)
-const gross_weight = bag_weigth + parseInt(weight_parch_received)
+  }
 
+  //delivery report by id
 
-const deliveryReportLot =await  Delivery_Reports_Lots.findOne({where:{
-  delivery_reportid:id
-}})
+  static async getDeliveryReportById(req, res) {
+    try {
+      const id = req.params.id;
+      const deliveryReport = await Delivery_reports.findOne({
+        where: {
+          id: id,
+        },
+      });
+      if (!deliveryReport) {
+        return res.status(404).json({
+          status: "fail",
+          message: "no delivery report lot found",
+        });
+      }
 
-console.log("bag   grosss",deliveryReportLot)
-    const columnToUpdate = {
-      receiving_form_id:req.body.receiving_form_id,
-      bag_type: req.body.bag_type,
-      total_bags_received: total_bags_received,
-      weight_received_bags: bag_weigth,
-      weight_parch_received: weight_parch_received,
-      gross_weight_parch_received:gross_weight,
-      moisture: req.body.moisture,
-      received:1,
-      received_by: UserID,
-      received_at: Date.now(),
-      status: "delivered"
-
+      return res.status(200).json({
+        status: "success",
+        message: "Delivery report  retrieved successfully !!!",
+        data: deliveryReport,
+      });
+    } catch (error) {
+      console.log("some thing went wrong", error);
+      return res.status(500).json({
+        status: "fail",
+        message: `Internal server error ${error.message}`,
+      });
     }
+  }
 
-    const transactions = await Transaction.findAll({
-      where: {
-        [Op.or]: [
-          { parchID_A: deliveryReportLot.parch_lot_ID },
-          { parchID_B: deliveryReportLot.parch_lot_ID },
-          { parchID_C: deliveryReportLot.parch_lot_ID},
-        ],
-      },
-    });
+  //update delivery report
+  static async updateDeliveryReport(req, res) {
+    try {
+      const id = req.params.id;
+      const UserID = req.user?.user.id;
+      const total_bags_received = req.body.total_bags_received;
 
-    if(transactions){
-      transactions.forEach(async(transaction)=>{
-        let updatedState = { state:"delivered"}
+      const weight_parch_received = req.body.weight_parch_received;
 
-        await Transaction.update(updatedState,{
-          where:{id:transaction.id}
-        })
+      const reportToUpdate = Delivery_reports.findOne({
+        where: {
+          id: id,
+        },
+      });
+      if (!reportToUpdate) {
+        return res.status(404).json({
+          status: "fail",
+          message: "Report you want to update does not exist !!!",
+        });
+      }
+      const bag_weigth = total_bags_received * parseFloat(0.166666);
+      const gross_weight = bag_weigth + parseInt(weight_parch_received);
 
-      })
+      const deliveryReportLot = await Delivery_Reports_Lots.findOne({
+        where: {
+          delivery_reportid: id,
+        },
+      });
+
+      const columnToUpdate = {
+        receiving_form_id: req.body.receiving_form_id,
+        bag_type: req.body.bag_type,
+        total_bags_received: total_bags_received,
+        weight_received_bags: bag_weigth,
+        weight_parch_received: weight_parch_received,
+        gross_weight_parch_received: gross_weight,
+        moisture: req.body.moisture,
+        received: 1,
+        received_by: UserID,
+        received_at: Date.now(),
+        status: "delivered",
+      };
+
+      const transactions = await Transaction.findAll({
+        where: {
+          [Op.or]: [
+            { parchID_A: deliveryReportLot.parch_lot_ID },
+            { parchID_B: deliveryReportLot.parch_lot_ID },
+            { parchID_C: deliveryReportLot.parch_lot_ID },
+          ],
+        },
+      });
+
+      if (transactions) {
+        transactions.forEach(async (transaction) => {
+          let updatedState = { state: "delivered" };
+
+          await Transaction.update(updatedState, {
+            where: { id: transaction.id },
+          });
+        });
+      }
+
+      await Delivery_reports.update(columnToUpdate, { where: { id: id } });
+      return res.status(200).json({
+        status: "success",
+        message: "Delivery report updated successfully",
+        data: columnToUpdate,
+      });
+    } catch (error) {
+      console.log("some thing went wrong", error);
+      return res.status(500).json({
+        Message: `internal server error `,
+      });
     }
-
-    await Delivery_reports.update(columnToUpdate,{where:{id:id}})
-    return res.status(200).json({
-      status:"success",
-      message:"Delivery report updated successfully",
-      data:columnToUpdate
-
-    })
-
-  }catch(error){
-console.log("some thing went wrong", error)
-return res.status(500).json({
-  Message:`internal server error `
-})
   }
 }
-}
-
-
-
 
 export default ParchmentTransportController;

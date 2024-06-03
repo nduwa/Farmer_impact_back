@@ -24,8 +24,8 @@ class AccessControlController {
 
   static async assignPermissionsToUser(req, res) {
     try {
-      const permissionsArray = req.body; // Assuming the array is sent directly in the body
-  
+      const permissionsArray = req.body;
+
       // Validate that permissionsArray is an array
       if (!Array.isArray(permissionsArray)) {
         return res.status(400).json({
@@ -33,9 +33,9 @@ class AccessControlController {
           message: "Permissions should be an array of objects",
         });
       }
-  
+
       const savedPermissions = [];
-  
+
       // Loop through the array and save each permission
       for (const permissionData of permissionsArray) {
         const permission = Mobile_App.build({
@@ -47,11 +47,11 @@ class AccessControlController {
           edit_record: permissionData.edit_record,
           platform: permissionData.platform,
         });
-  
+
         const savedPermission = await permission.save();
         savedPermissions.push(savedPermission);
       }
-  
+
       res.status(200).json({
         success: true,
         message: "Permissions assigned successfully",
@@ -59,17 +59,17 @@ class AccessControlController {
       });
     } catch (error) {
       console.error("Error assigning permissions:", error.message);
-      res.status(500).json({ success: false, message: "Internal server error" });
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
     }
   }
 
-
   static async createModule(req, res) {
     try {
-
       const newModule = await Mobile_App_Modules.create({
-        module_name:req.body.module_name,
-        platform:req.body.platform
+        module_name: req.body.module_name,
+        platform: req.body.platform,
       });
 
       return res.status(201).json({
@@ -84,8 +84,7 @@ class AccessControlController {
       });
     }
   }
-  
-  
+
   static async editModule(req, res) {
     try {
       const id = req.query.id;
@@ -108,6 +107,30 @@ class AccessControlController {
         status: "Failed",
         error: error.message,
       });
+    }
+  }
+
+  static async getAssignedModules(req, res) {
+    try {
+      const loggedinUser = req.user.staff.id;
+      const allAssignedModules = await Mobile_App.findAll({
+        where: {
+          userId: loggedinUser,
+        },
+      });
+      if (!allAssignedModules || allAssignedModules.length === 0) {
+        return res.status(404).json({
+          status: "fail",
+          message: "no assigned module found",
+        });
+      }
+      return res.status(200).json({
+        status: "success",
+        message: "all assigned modules retieved successfullt",
+        data: allAssignedModules,
+      });
+    } catch (error) {
+      return res.status(500).json({ status: "fail", error: error.message });
     }
   }
 }

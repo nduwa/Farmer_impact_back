@@ -40,7 +40,6 @@ class HarvestController {
         season = seasonData.__kp_Season;
         label = seasonData.Label;
       } else {
-        console.log("seasonss",season)
         const seasonData = await Season.findOne({
           where: { __kp_Season: season },
         });
@@ -51,11 +50,8 @@ class HarvestController {
             .json({ status: "fail", message: "Season not found" });
         }
 
-
         labels = seasonData?.Label;
       }
-
-      console.log("Selected Season:", labels);
 
       if (station) {
         transactionData = await Transaction.findAll({
@@ -70,7 +66,7 @@ class HarvestController {
             _kf_Station: station,
           },
         });
-console.log("statiion",station, farmerData.length, season)
+
         groupData = await Groups.findAll({
           where: {
             _kf_Station: station,
@@ -83,7 +79,6 @@ console.log("statiion",station, farmerData.length, season)
           },
         });
       } else {
-        console.log("seee",season)
         transactionData = await Transaction.findAll({
           where: {
             _kf_Season: season,
@@ -105,7 +100,6 @@ console.log("statiion",station, farmerData.length, season)
         seasons: label || labels,
       });
     } catch (error) {
-      console.error("Error:", error);
       return res.status(500).json({ status: "fail", error: error.message });
     }
   }
