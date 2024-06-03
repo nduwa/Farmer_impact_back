@@ -1,10 +1,7 @@
-import express from 'express'
-import StationControler from '../controllers/stationController'
-const stationRoutes = express.Router()
+import express from "express";
+import StationControler from "../controllers/stationController";
+const stationRoutes = express.Router();
 
-stationRoutes.get('/stations', StationControler.getAllStations)
+stationRoutes.get("/stations", StationControler.getAllStations);
 
-
-
-
-export default stationRoutes
+export default stationRoutes;

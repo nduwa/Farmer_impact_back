@@ -425,7 +425,6 @@ class CoffeePurchaseController {
           where: {
             _kf_Station: kp_station,
             _kf_Season: kp_season,
-            // Assuming site_day_lot is the field containing the journal ID
             cherry_lot_id: cherryLotId,
             // status: 0
           },
@@ -750,11 +749,6 @@ class CoffeePurchaseController {
       });
       if (transactions) {
         transactions.forEach(async (transaction) => {
-          console.log("Transaction ID:", transaction.id);
-          console.log("Transaction Kilograms:", transaction.kilograms);
-          console.log("Transaction Bad Kilograms:", transaction.bad_kilograms);
-          console.log("Lot Weight:", lot_weight);
-          // console.log('Parchweight:', parchweight);
           lot_weight +=
             parseFloat(transaction.kilograms) +
             parseFloat(transaction.bad_kilograms);

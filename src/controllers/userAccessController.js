@@ -17,7 +17,7 @@ class UserAccessController {
           message: "Staff not found ",
         });
       }
-      console.log("wanted", wantedStaff);
+
       const wantedUser = await User.findOne({
         where: {
           __Kp_User: wantedStaff._kf_User,
@@ -67,7 +67,7 @@ class UserAccessController {
   static async activateUser(req, res) {
     try {
       const id = req.query.id;
-      console.log("iddd", id);
+   
       const user = await User_access.findOne({
         where: {
           staff_ID: id,

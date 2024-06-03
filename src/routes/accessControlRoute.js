@@ -1,12 +1,22 @@
-import express from 'express'
-import AccessControlController from '../controllers/accessControlController'
-const accessControlRoutes = express.Router()
+import express from "express";
+import AccessControlController from "../controllers/accessControlController";
+import verifyToken from "../middlewares/auth";
+const accessControlRoutes = express.Router();
 
-accessControlRoutes.get('/allAccessControl', AccessControlController.getAllAccessControl)
-accessControlRoutes.post('/assignPermissions', AccessControlController.assignPermissionsToUser)
-accessControlRoutes.put('/update', AccessControlController.editModule)
-accessControlRoutes.post('/create', AccessControlController.createModule)
+accessControlRoutes.get(
+  "/allAccessControl",
+  AccessControlController.getAllAccessControl
+);
+accessControlRoutes.post(
+  "/assignPermissions",
+  AccessControlController.assignPermissionsToUser
+);
+accessControlRoutes.put("/update", AccessControlController.editModule);
+accessControlRoutes.post("/create", AccessControlController.createModule);
+accessControlRoutes.get(
+  "/assigned",
+  verifyToken,
+  AccessControlController.getAssignedModules
+);
 
-
-
-export default accessControlRoutes
+export default accessControlRoutes;

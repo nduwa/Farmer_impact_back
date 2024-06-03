@@ -4,7 +4,7 @@ class DeliveryProcesingController {
   static async getLoadedWeightById(req, res) {
     try {
       const id = req.params.id;
-      console.log("deliveryReport", id);
+
       const loadedWeights = await loaded_weights.findAll({
         where: {
           rtc_delivery_reports_id: id,
@@ -16,14 +16,13 @@ class DeliveryProcesingController {
           message: "No loaded weights!!!",
         });
       }
-      // console.log("loadee", loadedWeights)
+
       return res.status(200).json({
         status: "success",
         message: "Loaded weight retrieved successfully!!!",
         data: loadedWeights,
       });
     } catch (error) {
-      console.error("Error in getLoadedWeightById:", error);
       return res.status(500).json({
         status: "error",
         message: "Internal server error",
@@ -34,7 +33,7 @@ class DeliveryProcesingController {
   static async startProcessing(req, res) {
     try {
       const contributions = req.body;
-      console.log("i am contributions", req.body);
+
       // Check if contributions is an array
       if (!Array.isArray(contributions)) {
         return res.status(400).json({
@@ -64,8 +63,7 @@ class DeliveryProcesingController {
         rtc_transaction_id: contribution.rtc_transaction_id,
         transaction_weight: contribution.CherryWeight,
         weight_loaded: contribution.weight_loaded,
-        started_at: new Date(), // Use new Date() for current date and time
-        // ended_at: "000", // Default value of "000"
+        started_at: new Date(),
         rtc_delivery_reports_id: contribution.rtc_delivery_reports_id,
       }));
 
@@ -82,7 +80,7 @@ class DeliveryProcesingController {
       });
     } catch (error) {
       // Handle errors
-      console.error("Error processing contributions:", error);
+
       return res.status(500).json({
         success: false,
         message: "An error occurred while processing contributions.",
@@ -100,14 +98,13 @@ class DeliveryProcesingController {
           message: "No processed contributions!!!",
         });
       }
-      // console.log("loadee", loadedWeights)
+
       return res.status(200).json({
         status: "success",
         message: "Processed contributions retieved successfully!!!",
         data: processedContributions,
       });
     } catch (error) {
-      console.error("Error in retieving processed contributions:", error);
       return res.status(500).json({
         status: "error",
         message: "Internal server error",
@@ -118,7 +115,7 @@ class DeliveryProcesingController {
   static async getProcessedContributionById(req, res) {
     try {
       const id = req.params.id;
-      console.log("deliveryReport", id);
+
       const processedContribution = await Temp_contribution.findAll({
         where: {
           rtc_delivery_reports_id: id,
@@ -130,14 +127,13 @@ class DeliveryProcesingController {
           message: "No processed contributions!!!",
         });
       }
-      // console.log("loadee", loadedWeights)
+
       return res.status(200).json({
         status: "success",
         message: "Processed contributions retrieved successfully!!!",
         data: processedContribution,
       });
     } catch (error) {
-      console.error("Error in getLoadedWeightById:", error);
       return res.status(500).json({
         status: "error",
         message: "Internal server error",

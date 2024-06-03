@@ -5,7 +5,7 @@ const cherryRoutes = express.Router();
 
 cherryRoutes.post(
   "/add/:cherry_lot_id",
-CherryToRTCController.saveCherryToSubmit
+  CherryToRTCController.saveCherryToSubmit
 );
 
 export default cherryRoutes;

@@ -1,11 +1,8 @@
-import express from 'express'
-import DayLotsControler from '../controllers/dayLotsController'
-const daylotsRoutes = express.Router()
+import express from "express";
+import DayLotsControler from "../controllers/dayLotsController";
+const daylotsRoutes = express.Router();
 
-daylotsRoutes.get('/daylots', DayLotsControler.getAllDayLots)
-daylotsRoutes.get('/buckets', DayLotsControler.getAllBuckets)
+daylotsRoutes.get("/daylots", DayLotsControler.getAllDayLots);
+daylotsRoutes.get("/buckets", DayLotsControler.getAllBuckets);
 
-
-
-
-export default daylotsRoutes
+export default daylotsRoutes;

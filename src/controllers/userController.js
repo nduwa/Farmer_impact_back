@@ -14,7 +14,6 @@ class UserController {
   //user creation/signup/adding or registering a user
   static async createUser(req, res) {
     try {
-      console.log(req.body);
       const { error } = userValidationSchema.validate(req.body);
 
       if (error)
@@ -28,7 +27,7 @@ class UserController {
           [Op.or]: [{ Email: req.body.Email }, { Phone: req.body.Phone }],
         },
       });
-      console.log(checkduplicatedEmail);
+
       if (checkduplicatedEmail) {
         return res.status(400).json({
           status: "fail",
@@ -78,7 +77,6 @@ class UserController {
   static async updateUser(req, res) {
     try {
       const userId = req.params.userId;
-      console.log("user is", userId);
 
       const staffUser = await Staff.findOne({
         where: { id: userId },
@@ -89,7 +87,6 @@ class UserController {
           message: `User with ID ${userId} not found`,
         });
       }
-      console.log("useudihwefhseu", staffUser);
 
       const hashedPassword = await bcrypt.hash(req.body.password, 10);
       const __kp_User = generateRandomString(32);
@@ -121,7 +118,7 @@ class UserController {
         last_update_at: req.body.last_update_at,
         password: hashedPassword,
       });
-      console.log("after", updatedUser);
+
       res.status(200).json({
         status: "success",
         message: "User updated successfully",
@@ -139,7 +136,7 @@ class UserController {
   static async getAllUsers(req, res) {
     try {
       const users = await Users.findAll();
-      console.log("users", users.length);
+
       if (!users || users.length === 0) {
         return res
           .status(404)
@@ -153,7 +150,7 @@ class UserController {
   static async getAllStaff(req, res) {
     try {
       const staffs = await Staff.findAll();
-      console.log("staff", staffs.length);
+
       if (!staffs || staffs.length === 0) {
         return res
           .status(404)
@@ -217,9 +214,6 @@ class UserController {
         req.body.password,
         user.password
       );
-      console.log("password", req.body.password);
-      console.log("user password", user.password);
-      console.log("valid", validPassword);
 
       if (!validPassword) {
         return res.status(400).json({
