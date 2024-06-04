@@ -556,6 +556,19 @@ class mobileSyncController {
       return res.status(500).json({ status: "fail", error });
     }
   }
+
+  static async submitFarmer(req, res) {
+    try {
+      console.log(req.body);
+
+      return res.status(200).json({
+        status: "success",
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ status: "fail", error });
+    }
+  }
 }
 
 export default mobileSyncController;
