@@ -2,11 +2,14 @@
   "name": "rtc-farmer-impact-be",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "npm run build && node ./build/server.js",
     "dev": "nodemon --exec babel-node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build-babel-src": "babel src -d ./build/src -s",
+    "build-babel-server": "babel server.js --out-file ./build/server.js -s",
+    "clean": "rimraf build && mkdir build",
+    "build": "npm run clean && npm run build-babel-src && npm run build-babel-server"
   },
   "keywords": [],
   "author": "",
@@ -29,6 +32,7 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.9.1",
+    "rimraf": "^5.0.7",
     "sequelize": "^6.36.0"
   },
   "devDependencies": {
