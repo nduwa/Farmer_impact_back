@@ -15,6 +15,7 @@ import training_attendance from "../models/rtc_training_attendance";
 import training_attendance_sheet from "../models/rtc_attendance_sheets";
 import { nextChar } from "../helpers/nextChar";
 import { getHouseholdid } from "../helpers/getHouseholdid";
+import { Op } from "sequelize";
 
 class mobileSyncController {
   static async retrieveSupplier(req, res) {
@@ -144,7 +145,7 @@ class mobileSyncController {
       const { stationId } = req.params;
 
       allFarmers = await farmers.findAll({
-        where: { _kf_Station: stationId },
+        where: { _kf_Station: stationId, type: { [Op.ne]: "deleted" } }, // retrieve all except deleted records
       });
 
       if (!allFarmers || allFarmers.length === 0) {
@@ -759,6 +760,45 @@ class mobileSyncController {
         status: "success",
         uploadedFarmers: farmerArray,
         uploadedHH: hhArray,
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ status: "fail", error });
+    }
+  }
+
+  static async farmerSoftDelete(req, res) {
+    try {
+      const { farmersToDelete } = req.body;
+      let processedData = [];
+
+      if (farmersToDelete.length < 1)
+        return res.status(400).json({
+          status: "fail",
+          message: `incomplete data`,
+        });
+
+      for (const farmer of farmersToDelete) {
+        let tmpFarmer = await farmers.findOne({
+          where: { __kp_Farmer: farmer.__kp_Farmer },
+        });
+
+        if (!tmpFarmer)
+          return res.status(404).json({
+            status: "fail",
+            message: `Farmer ${farmer.Name} was not fully registered yet`,
+          });
+
+        await tmpFarmer.update({
+          type: "deleted",
+        });
+
+        processedData.push(farmer.__kp_Farmer);
+      }
+
+      res.status(200).json({
+        status: "success",
+        processedData,
       });
     } catch (error) {
       console.log(error);

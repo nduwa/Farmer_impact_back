@@ -103,7 +103,7 @@ const Farmers = sequelize.define('rtc_farmers',{
         allowNull:false
     },
     type:{
-        type: DataTypes.ENUM('new','update','offline'),
+        type: DataTypes.ENUM('new','update','offline','deleted'),
         allowNull: false
     },
     sync_farmers:{
