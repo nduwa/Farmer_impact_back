@@ -76,4 +76,13 @@ mobileSyncRoutes.post(
 mobileSyncRoutes.post("/journal", mobileSyncController.submitJournal);
 mobileSyncRoutes.post("/inspection", mobileSyncController.submitInspection);
 
+mobileSyncRoutes.post(
+  "/farmers/registration",
+  mobileSyncController.submitFarmer
+);
+mobileSyncRoutes.patch(
+  "/farmers/deletion",
+  mobileSyncController.farmerSoftDelete
+);
+
 export default mobileSyncRoutes;
