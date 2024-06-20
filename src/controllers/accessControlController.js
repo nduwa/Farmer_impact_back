@@ -22,6 +22,39 @@ class AccessControlController {
     }
   }
 
+  static async mobileAccessControl(req, res) {
+    try {
+      const loggedinUser = req.user.staff.id;
+
+      const mobileModules = await Mobile_App_Modules.findAll({
+        where: { platform: "mobile" },
+      });
+
+      if (!mobileModules || mobileModules.length < 1) {
+        return res.status(404).json({
+          status: "fail",
+          message: "no access control found",
+        });
+      }
+
+      const allAssignedModules = await Mobile_App.findAll({
+        where: {
+          userId: loggedinUser,
+          platform: "mobile",
+        },
+      });
+
+      return res.status(200).json({
+        status: "success",
+        message: "all access control retieved successfully",
+        mobileModules,
+        allAssignedModules,
+      });
+    } catch (error) {
+      return res.status(500).json({ status: "fail", error });
+    }
+  }
+
   static async assignPermissionsToUser(req, res) {
     try {
       const permissionsArray = req.body;
@@ -126,7 +159,7 @@ class AccessControlController {
       }
       return res.status(200).json({
         status: "success",
-        message: "all assigned modules retieved successfullt",
+        message: "all assigned modules retieved successfully",
         data: allAssignedModules,
       });
     } catch (error) {
