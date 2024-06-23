@@ -13,6 +13,8 @@ class TranslationsController {
         await translation.findAndCountAll({
           offset,
           limit,
+        order: [['created_at', 'DESC']], 
+
         });
 
       if (allTranslations.length === 0) {
@@ -44,6 +46,9 @@ class TranslationsController {
   static async deleteTranslation(req, res) {
     try {
       const id = req.query.id;
+      const translatin = await translation.findOne({
+        where: { id: id },
+      });
       const deletedTranslation = await translation.destroy({
         where: { id: id },
       });
@@ -58,8 +63,11 @@ class TranslationsController {
       return res.status(200).json({
         status: "success",
         message: "Translation deleted successfully",
+        data:translatin
       });
     } catch (error) {
+      console.log("errrr",error)
+
       return res.status(500).json({
         status: "error",
         message: "Internal server error",
@@ -99,20 +107,21 @@ class TranslationsController {
 
   static async addTranslation(req, res) {
     try {
-      const {  phrase, phrasefr, phraserw } = req.body;
+      const { phrase, phrasefr, phraserw } = req.body;
       const UserID = req.user?.user.id;
-   
+
       const maximumId = await translation.max("id");
       const newMaximum = maximumId + 1;
 
-console.log("translation",maximumId,newMaximum)
+      console.log("translation", maximumId, newMaximum);
       const newTranslation = await translation.create({
-        created_by:UserID,
+        created_by: UserID,
         code: `GLC${newMaximum}`,
         phrase,
         phrasefr,
         phraserw,
-        status:0,
+        status: 0,
+        created_at: Date.now(),
       });
 
       return res.status(201).json({

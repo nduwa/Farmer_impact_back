@@ -9,12 +9,12 @@ class EvaluationController {
       const offset = (page - 1) * pageSize;
       const limit = pageSize;
 
-      const { count, rows: allEvaluations } = await Inspection_question.findAndCountAll(
-        {
+      const { count, rows: allEvaluations } =
+        await Inspection_question.findAndCountAll({
           offset,
           limit,
-        }
-      );
+          // order: [['updated_at', 'DESC']],
+        });
 
       if (allEvaluations.length === 0) {
         return res.status(404).json({
@@ -25,7 +25,7 @@ class EvaluationController {
 
       return res.status(200).json({
         status: "success",
-        message: "evaluations records retrieved successfully",
+        message: "Evaluation records retrieved successfully",
         data: {
           totalItems: count,
           totalPages: Math.ceil(count / pageSize),
@@ -42,4 +42,5 @@ class EvaluationController {
     }
   }
 }
+
 export default EvaluationController;
