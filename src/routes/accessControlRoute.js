@@ -7,6 +7,11 @@ accessControlRoutes.get(
   "/allAccessControl",
   AccessControlController.getAllAccessControl
 );
+accessControlRoutes.get(
+  "/access/mobile",
+  verifyToken,
+  AccessControlController.mobileAccessControl
+);
 accessControlRoutes.post(
   "/assignPermissions",
   AccessControlController.assignPermissionsToUser
