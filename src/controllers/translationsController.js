@@ -13,8 +13,7 @@ class TranslationsController {
         await translation.findAndCountAll({
           offset,
           limit,
-        order: [['created_at', 'DESC']], 
-
+          order: [["created_at", "DESC"]],
         });
 
       if (allTranslations.length === 0) {
@@ -63,10 +62,10 @@ class TranslationsController {
       return res.status(200).json({
         status: "success",
         message: "Translation deleted successfully",
-        data:translatin
+        data: translatin,
       });
     } catch (error) {
-      console.log("errrr",error)
+      console.log("errrr", error);
 
       return res.status(500).json({
         status: "error",
