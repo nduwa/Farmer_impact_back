@@ -16,7 +16,7 @@ import mailOptions from '../database/mailOption'; // Define your mailOptions
 class DashboardFMController {
     static apiUrl = 'https://dashboard-api.farmerimpact.co.rw';
     static maxRetries = 3;
-    static retryDelay = 5000; // milliseconds
+    static retryDelay = 6000; // milliseconds
 
     static async fetchAllAndPush(req, res) {
         try {
