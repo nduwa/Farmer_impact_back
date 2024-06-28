@@ -22,6 +22,9 @@ import FarmerRouter from "./recentFarmerRoutes";
 import UserAccessRouter from "./userAccessRoute";
 import householdTreesRoutes from "./householdTreesRoutes";
 import dashboardFMRoutes from "./dashboardFMRoute";
+import translationsRouter from "./translationsRoute";
+import evaluationRouter from "./evaluationsRoute";
+import inspectionAnswersRoutes from "./inspectionAnswersRoute";
 
 const router = Router();
 router.use("/user", userRoutes);
@@ -49,5 +52,8 @@ router.use("/user_registration", FarmerRouter);
 router.use("/useraccess", UserAccessRouter);
 router.use("/trees", householdTreesRoutes);
 router.use("/dashboardApi", dashboardFMRoutes);
+router.use("/translations", translationsRouter);
+router.use("/evaluations", evaluationRouter);
+router.use("/answers", inspectionAnswersRoutes);
 
 export default router;
