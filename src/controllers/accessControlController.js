@@ -166,6 +166,29 @@ class AccessControlController {
       return res.status(500).json({ status: "fail", error: error.message });
     }
   }
+  static async getAssignedModulesToSingleUser(req, res) {
+    try {
+      const id = req.query.id;
+      const allAssignedModules = await Mobile_App.findAll({
+        where: {
+          userId: id,
+        },
+      });
+      if (!allAssignedModules || allAssignedModules.length === 0) {
+        return res.status(404).json({
+          status: "fail",
+          message: "no assigned module found",
+        });
+      }
+      return res.status(200).json({
+        status: "success",
+        message: "all assigned modules retieved successfully",
+        data: allAssignedModules,
+      });
+    } catch (error) {
+      return res.status(500).json({ status: "fail", error: error.message });
+    }
+  }
 }
 
 export default AccessControlController;

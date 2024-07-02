@@ -23,5 +23,9 @@ accessControlRoutes.get(
   verifyToken,
   AccessControlController.getAssignedModules
 );
+accessControlRoutes.get(
+  "/singleAssigned",
+  AccessControlController.getAssignedModulesToSingleUser
+);
 
 export default accessControlRoutes;

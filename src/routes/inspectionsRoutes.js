@@ -6,4 +6,5 @@ inspectionsRouter.get(
   "/allInspections",
   InspectionsController.getAllUserInspections
 );
+inspectionsRouter.get("/report", InspectionsController.getInspectionDetails);
 export default inspectionsRouter;

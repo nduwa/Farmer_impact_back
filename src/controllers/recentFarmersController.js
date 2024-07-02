@@ -49,6 +49,40 @@ class FarmerController {
         });
       }
 
+      if (farmer.status === "pending") {
+        return res.status(400).json({
+          status: "Failed",
+          message: "Farmer is already approved",
+        });
+      }
+
+      farmer.status = "pending";
+      await farmer.save();
+
+      return res.status(200).json({
+        status: "success",
+        message: "Farmer approved successfully!",
+        data: farmer,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: "Failed",
+        error: error.message,
+      });
+    }
+  }
+  static async approveApprovedFarmer(req, res) {
+    try {
+      const farmerId = req.query.id;
+      const farmer = await Field_farmer.findByPk(farmerId);
+
+      if (!farmer) {
+        return res.status(404).json({
+          status: "Failed",
+          message: "Farmer not found",
+        });
+      }
+
       if (farmer.status === "approved") {
         return res.status(400).json({
           status: "Failed",
