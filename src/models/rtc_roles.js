@@ -55,8 +55,9 @@ const Roles = sequelize.define('roles',{
         allowNull:false
     },
     status:{
-        type: DataTypes.DATE,
-        allowNull:false
+        type: DataTypes.INTEGER,
+        allowNull:false,
+        defaultValue: 0
     }
     
 });

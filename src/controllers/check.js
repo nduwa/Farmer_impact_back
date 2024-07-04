@@ -6,10 +6,16 @@ import Readings from '../models/rtc_readings'; // Import your Readings model
 import Users from '../models/rtc_users'; // Import your Users model
 import Staff from '../models/rtc_staff'; // Import your Staff model
 import Roles from '../models/rtc_roles'; // Import your Roles model
-import Farmers from '../models/rtc_farmers'; // Adjust path as per your project structure and model name
+import Farmer from '../models/rtc_farmers'; // Adjust path as per your project structure and model name
 import Household from '../models/rtc_households'; 
 import AccessControl from '../models/rtc_mobile_app_access_control'; 
 import AppModules from '../models/rtc_mobile_app_modules';
+import Evaluation from '../models/rtc_evaluations'; // Assuming Evaluation is the correct model name
+import Translation from '../models/rtc_translations'; // Assuming Translation is the correct model name
+import Training from '../models/rtc_training'; // Assuming Training is the correct model name
+import Response from '../models/rtc_inspection_responses'; // Assuming Response is the correct model name
+import Question from '../models/rtc_inspection_questions'; // Assuming Question is the correct model name
+import Answer from '../models/rtc_inspection_answers'; // Assuming Answer is the correct model name
 import transporter from '../database/mailConfig'; // Import your nodemailer transporter
 import mailOptions from '../database/mailOption'; // Define your mailOptions
 
@@ -17,6 +23,13 @@ class DashboardFMController {
     static apiUrl = 'https://dashboard-api.farmerimpact.co.rw';
     static maxRetries = 3;
     static retryDelay = 6000; // milliseconds
+
+    static axiosInstance = axios.create({
+        baseURL: DashboardFMController.apiUrl,
+        // You may need to adjust SSL/TLS settings or add additional configuration
+        // For example, to ignore SSL validation (not recommended for production):
+        // httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+    });
 
     static async fetchAllAndPush(req, res) {
         try {
@@ -30,7 +43,14 @@ class DashboardFMController {
                 DashboardFMController.fetchAllAndPushStaff(),
                 DashboardFMController.fetchAllAndPushSeasons(),
                 DashboardFMController.fetchAllAndPushRoles(),
-                DashboardFMController.fetchAllAndPushFarmer()
+                DashboardFMController.fetchAllAndPushHouseholds(),
+                DashboardFMController.fetchAllAndPushFarmers(),
+                DashboardFMController.fetchAllAndPushInspectionAnswer(),
+                DashboardFMController.fetchAllAndPushInspectionQuestion(),
+                DashboardFMController.fetchAllAndPushTraining(),
+                DashboardFMController.fetchAllAndPushTranslation(),
+                DashboardFMController.fetchAllAndPushEvaluation(),
+                DashboardFMController.fetchAllAndPushInspectionResponse()
             ]);
 
             const successMessages = results.filter(result => result.success);
@@ -426,107 +446,6 @@ class DashboardFMController {
             return { success: false, message: 'Failed to fetch or insert staff data.', error: error.message };
         }
     }
-    static async fetchAllAndPushRoles() {
-        let allRoles = [];
-        let currentPage = 1;
-        let retries = 0;
-
-        while (retries < DashboardFMController.maxRetries) {
-            try {
-                const response = await axios.get(`${DashboardFMController.apiUrl}/roles?page=${currentPage}`, {
-                    timeout: 10000, // 10 seconds timeout
-                });
-
-                if (!response.data || response.data.message === 'No readings found.') {
-                    console.log(`No roles found on page ${currentPage}, exiting loop.`);
-                    break;
-                }
-
-                if (!Array.isArray(response.data.RolesData)) {
-                    console.error(`Invalid response data for roles on page ${currentPage}. Response data:`, response.data);
-                    throw new Error(`Invalid response data for roles on page ${currentPage}. Ensure that the response contains an array named "RolesData".`);
-                }
-
-                const rolesData = response.data.RolesData;
-
-                if (rolesData.length === 0) {
-                    if (allRoles.length > 0) {
-                        console.log(`No more roles found on page ${currentPage}, but continuing as allRoles already has data.`);
-                    } else {
-                        console.log(`No more roles found on page ${currentPage}, exiting loop.`);
-                        break;
-                    }
-                }
-
-                allRoles.push(...rolesData);
-                console.log(`Fetched ${rolesData.length} roles from page ${currentPage}`);
-
-                currentPage++;
-            } catch (error) {
-                retries++;
-                console.error(`Error fetching roles data (Attempt ${retries}):`, error.message);
-
-                if (retries < DashboardFMController.maxRetries) {
-                    console.log(`Retrying in ${DashboardFMController.retryDelay / 1000} seconds...`);
-                    await new Promise(resolve => setTimeout(resolve, DashboardFMController.retryDelay));
-                } else {
-                    console.error(`Maximum retries (${DashboardFMController.maxRetries}) exceeded.`);
-                    throw new Error('Failed to fetch roles data after maximum retries.');
-                }
-            }
-        }
-
-        if (allRoles.length === 0) {
-            console.log('No roles data found from API.');
-            return { success: false, message: 'No roles data found from API.' };
-        }
-
-        try {
-            // Fetch all existing roles from the database
-            const existingRoles = await Roles.findAll({
-                attributes: ['__kp_Role', '_kf_Staff', 'z_recModifyTimestamp']
-            });
-
-            // Filter new roles to be inserted and existing roles to be deleted
-            const newRoles = [];
-            const rolesToDelete = [];
-
-            for (const role of allRoles) {
-                const existingRole = existingRoles.find(r => r.__kp_Role === role.__kp_Role);
-
-                if (!existingRole) {
-                    newRoles.push(role);
-                } else if (existingRole._kf_Staff === role._kf_Staff && role.z_recModifyTimestamp > existingRole.z_recModifyTimestamp) {
-                    rolesToDelete.push(existingRole.__kp_Role);
-                    newRoles.push(role);
-                }
-            }
-
-            // Delete existing roles that need to be replaced
-            if (rolesToDelete.length > 0) {
-                await Roles.destroy({
-                    where: {
-                        __kp_Role: rolesToDelete
-                    }
-                });
-                console.log(`${rolesToDelete.length} existing roles deleted from database.`);
-            }
-
-            // Bulk insert new roles into the database
-            if (newRoles.length > 0) {
-                await Roles.bulkCreate(newRoles);
-                console.log(`${newRoles.length} new roles inserted successfully into the database table.`);
-                return { success: true, message: `${newRoles.length} new roles inserted successfully into the database table.` };
-            } else {
-                console.log('No new updated roles to insert into the database table.');
-                return { success: false, message: 'No new updated roles to insert into the database table.' };
-            }
-        } catch (error) {
-            console.error('Error inserting roles data:', error.message);
-            return { success: false, message: 'Failed to insert roles data into the database.', error: error.message };
-        }
-    }
-
     static async sendCombinedEmailNotification(successMessages, failureMessages) {
         try {
             const successCount = successMessages.length;
@@ -716,147 +635,632 @@ class DashboardFMController {
             return { success: false, message: 'Failed to fetch or insert app modules data.', error: error.message };
         }
     }
-    static async fetchAllAndPushFarmer() {
+    static async fetchAllAndPushFarmers() {
         let allFarmers = [];
         let currentPage = 1;
-        let retries = 0;
 
-        while (retries < DashboardFMController.maxRetries) {
-            try {
-                // Fetch farmers data
+        try {
+            while (true) {
                 const response = await axios.get(`${DashboardFMController.apiUrl}/farmer?page=${currentPage}`);
 
-                if (!response.data) {
-                    throw new Error(`Invalid response data for farmers on page ${currentPage}. Response data is empty or undefined.`);
+                if (!response.data || response.data.message === 'No farmers found.') {
+                    console.log(`No farmers found on page ${currentPage}, exiting loop.`);
+                    break;
                 }
 
                 if (!Array.isArray(response.data.Farmers)) {
                     console.error(`Invalid response data for farmers on page ${currentPage}. Response data:`, response.data);
-                    throw new Error(`Invalid response data for farmers on page ${currentPage}. Ensure that the response contains an array named "farmers".`);
+                    throw new Error(`Invalid response data for farmers on page ${currentPage}. Ensure that the response contains an array named "Farmers".`);
                 }
 
                 const farmers = response.data.Farmers;
 
                 if (farmers.length === 0) {
-                    if (allFarmers.length > 0) {
-                        console.log(`No more farmers found on page ${currentPage}, but continuing as allFarmers already has data.`);
-                    } else {
-                        console.log(`No more farmers found on page ${currentPage}, exiting loop.`);
-                        break;
-                    }
+                    console.log(`No more farmers found on page ${currentPage}, exiting loop.`);
+                    break;
                 }
 
                 allFarmers.push(...farmers);
                 console.log(`Fetched ${farmers.length} farmers from page ${currentPage}`);
 
                 currentPage++;
-            } catch (error) {
-                if (axios.isAxiosError(error)) {
-                    if (error.response && error.response.status === 404) {
-                        console.error('Farmers data not found:', error.response.data);
-                        return { success: false, message: 'Farmers data not found.', error: error.response.data };
-                    } else if (error.code === 'ECONNABORTED') {
-                        console.log(`Request timed out. Retrying... (${retries + 1}/${DashboardFMController.maxRetries})`);
-                    } else {
-                        console.error('Error fetching farmers data:', error);
-                        return { success: false, message: 'Failed to fetch farmers data.', error: error.message };
-                    }
-                } else {
-                    console.error('Non-Axios error occurred:', error);
-                    return { success: false, message: 'Non-Axios error occurred.', error: error.message };
-                }
             }
 
-            retries++;
-            await new Promise(resolve => setTimeout(resolve, DashboardFMController.retryDelay * retries));
-        }
-
-        if (allFarmers.length === 0) {
-            console.log('No farmers data found from API.');
-            return { success: false, message: 'No farmers data found from API.' };
-        }
-
-        try {
-            // Fetch household data from another API endpoint
-            const householdResponse = await axios.get(`${DashboardFMController.apiUrl}/Household?page=${currentPage}`);
-            if (!householdResponse.data || !Array.isArray(householdResponse.data.households)) {
-                throw new Error('Invalid or empty response data for households from API.');
+            if (allFarmers.length === 0) {
+                console.log('No farmers data found from API.');
+                return { success: false, message: 'No farmers data found from API.' };
             }
 
-            const Households = householdResponse.data.households;
-
-            // Fetch all existing farmers and their households from the database
-            const existingFarmers = await Farmers.findAll({
-                attributes: ['__kp_Farmer', '_kf_Household', 'updated_at']
-            });
-
-            // Create a map of existing farmers by _kf_Household
-            const existingFarmerMap = new Map();
-            existingFarmers.forEach(farmer => {
-                existingFarmerMap.set(farmer._kf_Household.toString(), {
-                    __kp_Farmer: farmer.__kp_Farmer,
-                    updated_at: farmer.updated_at
-                });
-            });
-
-            // Extract all _kf_Household values from new farmers
-            const newHouseholdKeys = allFarmers.map(farmer => farmer._kf_Household);
-
-            // Find households that do not already exist in the database
-            const existingHouseholds = await Household.findAll({
-                where: {
-                    __kp_Household: newHouseholdKeys
-                }
-            });
-
-            // Create a map of existing households by __kp_Household
-            const existingHouseholdMap = new Map();
-            existingHouseholds.forEach(household => {
-                existingHouseholdMap.set(household.__kp_Household.toString(), household);
-            });
-
-            // Filter out new farmers that need to be inserted
-            const newFarmers = allFarmers.filter(farmer => {
-                const existingFarmer = existingFarmerMap.get(farmer._kf_Household.toString());
-                return !existingFarmer || farmer.updated_at > existingFarmer.updated_at;
-            });
-
-            // Insert new farmers into the database
-            if (newFarmers.length > 0) {
-                await Farmers.bulkCreate(newFarmers);
-
-                // Insert related household data for new farmers
-                const newHouseholds = newFarmers.filter(farmer => !existingHouseholdMap.has(farmer._kf_Household.toString()))
-                    .map(farmer => {
-                        const householdData = Households.find(household => household.__kp_Household === farmer._kf_Household);
-                        if (!householdData) {
-                            console.warn(`Household data not found for _kf_Household: ${farmer._kf_Household}`);
-                            return null; // Exclude farmer if household data not found
-                        }
-
-                        return {
-                            __kp_Household: householdData.__kp_Household,
-                            someField: householdData.someField, // Replace with actual field from API response
-                            // Add other household fields as needed
-                        };
-                    })
-                    .filter(household => household !== null); // Filter out null entries due to missing household data
-
-                // Insert new households into the database
-                if (newHouseholds.length > 0) {
-                    await Household.bulkCreate(newHouseholds);
-                    console.log(`${newHouseholds.length} new households inserted successfully into the database table.`);
-                }
+            // Inserting farmers in chunks to handle large data
+            const chunkSize = 1000; // Adjust as per your needs
+            for (let i = 0; i < allFarmers.length; i += chunkSize) {
+                const chunk = allFarmers.slice(i, i + chunkSize);
+                await DashboardFMController.insertFarmersIntoDatabase(chunk);
             }
 
-            // Return success message
-            console.log(`${newFarmers.length} new farmers inserted successfully into the database table.`);
-            return { success: true, message: `${newFarmers.length} new farmers inserted successfully into the database table.` };
+            console.log(`${allFarmers.length} farmers inserted successfully into the database.`);
+            return { success: true, message: `${allFarmers.length} farmers inserted successfully into the database.` };
+
         } catch (error) {
             console.error('Error fetching or inserting farmers data:', error);
             return { success: false, message: 'Failed to fetch or insert farmers data.', error: error.message };
         }
     }
+
+    static async insertFarmersIntoDatabase(farmers) {
+        try {
+            // Insert or update based on __kp_Farmer field
+            await Promise.all(farmers.map(async (farmer) => {
+                const [insertedFarmer, created] = await Farmer.findOrCreate({
+                    where: { __kp_Farmer: farmer.__kp_Farmer },
+                    defaults: farmer // Insert farmer if not found
+                });
+                
+                if (!created) {
+                    console.log(`Farmer with __kp_Farmer ${insertedFarmer.__kp_Farmer} already exists.`);
+                    // Handle update logic if needed
+                }
+            }));
+        } catch (error) {
+            console.error('Error inserting farmers into database:', error);
+            throw error;
+        }
+    }
+    static async fetchAllAndPushHouseholds() {
+        let allHouseholds = [];
+        let currentPage = 1;
+
+        try {
+            while (true) {
+                const response = await axios.get(`${DashboardFMController.apiUrl}/household?page=${currentPage}`);
+
+                if (!response.data || response.data.message === 'No households found.') {
+                    console.log(`No households found on page ${currentPage}, exiting loop.`);
+                    break;
+                }
+
+                if (!Array.isArray(response.data.households)) {
+                    console.error(`Invalid response data for households on page ${currentPage}. Response data:`, response.data);
+                    throw new Error(`Invalid response data for households on page ${currentPage}. Ensure that the response contains an array named "Households".`);
+                }
+
+                const households = response.data.households;
+
+                if (households.length === 0) {
+                    console.log(`No more households found on page ${currentPage}, exiting loop.`);
+                    break;
+                }
+
+                allHouseholds.push(...households);
+                console.log(`Fetched ${households.length} households from page ${currentPage}`);
+
+                currentPage++;
+            }
+
+            if (allHouseholds.length === 0) {
+                console.log('No households data found from API.');
+                return { success: false, message: 'No households data found from API.' };
+            }
+
+            // Inserting households in chunks to handle large data
+            const chunkSize = 1000; // Adjust as per your needs
+            for (let i = 0; i < allHouseholds.length; i += chunkSize) {
+                const chunk = allHouseholds.slice(i, i + chunkSize);
+                await DashboardFMController.insertHouseholdsIntoDatabase(chunk);
+            }
+
+            console.log(`${allHouseholds.length} households inserted successfully into the database.`);
+            return { success: true, message: `${allHouseholds.length} households inserted successfully into the database.` };
+
+        } catch (error) {
+            console.error('Error fetching or inserting households data:', error);
+            return { success: false, message: 'Failed to fetch or insert households data.', error: error.message };
+        }
+    }
+
+    static async insertHouseholdsIntoDatabase(households) {
+        try {
+            // Insert or update based on __kp_Household field
+            await Promise.all(households.map(async (household) => {
+                const [insertedHousehold, created] = await Household.findOrCreate({
+                    where: { __kp_Household: household.__kp_Household },
+                    defaults: household // Insert household if not found
+                });
+                
+                if (!created) {
+                    console.log(`Household with __kp_Household ${insertedHousehold.__kp_Household} already exists.`);
+                    // Handle update logic if needed
+                }
+            }));
+        } catch (error) {
+            console.error('Error inserting households into database:', error);
+            throw error;
+        }
+    }
+    static async fetchAllAndPushRoles() {
+        let allRoles = [];
+        let currentPage = 1;
+
+        try {
+            while (true) {
+                const response = await axios.get(`${DashboardFMController.apiUrl}/roles?page=${currentPage}`);
+
+                if (!response.data || response.data.message === 'No readings found.') {
+                    console.log(`No roles found on page ${currentPage}, exiting loop.`);
+                    break;
+                }
+
+                if (!Array.isArray(response.data.RolesData)) {
+                    console.error(`Invalid response data for roles on page ${currentPage}. Response data:`, response.data);
+                    throw new Error(`Invalid response data for roles on page ${currentPage}. Ensure that the response contains an array named "RolesData".`);
+                }
+
+                const rolesData = response.data.RolesData;
+
+                if (rolesData.length === 0) {
+                    console.log(`No more roles found on page ${currentPage}, exiting loop.`);
+                    break;
+                }
+
+                allRoles.push(...rolesData);
+                console.log(`Fetched ${rolesData.length} roles from page ${currentPage}`);
+
+                currentPage++;
+            }
+
+            if (allRoles.length === 0) {
+                console.log('No roles data found from API.');
+                return { success: false, message: 'No roles data found from API.' };
+            }
+
+            // Inserting roles in chunks to handle large data
+            const chunkSize = 1000; // Adjust as per your needs
+            for (let i = 0; i < allRoles.length; i += chunkSize) {
+                const chunk = allRoles.slice(i, i + chunkSize);
+                await DashboardFMController.insertRolesIntoDatabase(chunk);
+            }
+
+            console.log(`${allRoles.length} roles inserted successfully into the database.`);
+            return { success: true, message: `${allRoles.length} roles inserted successfully into the database.` };
+
+        } catch (error) {
+            console.error('Error fetching or inserting roles data:', error);
+            return { success: false, message: 'Failed to fetch or insert roles data.', error: error.message };
+        }
+    }
+    static async insertRolesIntoDatabase(roles) {
+        try {
+            // Insert or update based on __kp_Role field
+            await Promise.all(roles.map(async (role) => {
+                const [insertedRole, created] = await Roles.findOrCreate({
+                    where: { __kp_Role: role.__kp_Role },
+                    defaults: role // Insert role if not found
+                });
+
+                if (!created) {
+                    console.log(`Role with __kp_Role ${insertedRole.__kp_Role} already exists.`);
+                    // Handle update logic if needed
+                }
+            }));
+        } catch (error) {
+            console.error('Error inserting roles into database:', error);
+            throw error;
+        }
+    }
+    static async fetchAllAndPushInspectionAnswer() {
+        let allAnswers = [];
+        let currentPage = 1;
+
+        try {
+            while (true) {
+                const response = await axios.get(`${DashboardFMController.apiUrl}/inspection_answer?page=${currentPage}`);
+
+                if (!response.data || response.data.message === 'No Inspection_Answer found.') {
+                    console.log(`No inspection answers found on page ${currentPage}, exiting loop.`);
+                    break;
+                }
+
+                if (!Array.isArray(response.data.Answers)) {
+                    console.error(`Invalid response data for inspection answers on page ${currentPage}. Response data:`, response.data);
+                    throw new Error(`Invalid response data for inspection answers on page ${currentPage}. Ensure that the response contains an array named "Answers".`);
+                }
+
+                const inspectionAnswers = response.data.Answers;
+
+                if (inspectionAnswers.length === 0) {
+                    if (allAnswers.length > 0) {
+                        console.log(`No more inspection answers found on page ${currentPage}, but continuing as allAnswers already has data.`);
+                    } else {
+                        console.log(`No more inspection answers found on page ${currentPage}, exiting loop.`);
+                        break;
+                    }
+                }
+
+                allAnswers.push(...inspectionAnswers);
+                console.log(`Fetched ${inspectionAnswers.length} inspection answers from page ${currentPage}`);
+
+                currentPage++;
+            }
+
+            if (allAnswers.length === 0) {
+                console.log('No inspection answers data found from API.');
+                return { success: false, message: 'No inspection answers data found from API.' };
+            }
+
+            // Check if allAnswers already exist in the database before inserting
+            const existingAnswers = await Answer.findAll({
+                attributes: ['id'] // Adjust as per your actual primary key or identifier
+            });
+
+            // Extract IDs from existingAnswers
+            const existingAnswerIds = existingAnswers.map(answer => answer.id);
+
+            // Filter out existing answers
+            const newAnswers = allAnswers.filter(answer => !existingAnswerIds.includes(answer.id));
+
+            if (newAnswers.length === 0) {
+                console.log('All fetched inspection answers already exist in the database.');
+                return { success: false, message: 'All fetched inspection answers already exist in the database.' };
+            }
+
+            // Example: Assuming Answer.bulkCreate is used to insert inspection answers into the database
+            await Answer.bulkCreate(newAnswers);
+            console.log(`${newAnswers.length} new inspection answers inserted successfully into the database table.`);
+            return { success: true, message: `${newAnswers.length} new inspection answers inserted successfully into the database table.` };
+
+        } catch (error) {
+            console.error('Error fetching or inserting inspection answers data:', error);
+            return { success: false, message: 'Failed to fetch or insert inspection answers data.', error: error.message };
+        }
+    }
+    static async fetchAllAndPushInspectionQuestion() {
+        let allQuestions = [];
+        let currentPage = 1;
+
+        try {
+            while (true) {
+                const response = await axios.get(`${DashboardFMController.apiUrl}/inspection_question?page=${currentPage}`);
+
+                if (!response.data || response.data.message === 'No Inspection_Question found.') {
+                    console.log(`No inspection questions found on page ${currentPage}, exiting loop.`);
+                    break;
+                }
+
+                if (!Array.isArray(response.data.Questions)) {
+                    console.error(`Invalid response data for inspection questions on page ${currentPage}. Response data:`, response.data);
+                    throw new Error(`Invalid response data for inspection questions on page ${currentPage}. Ensure that the response contains an array named "Questions".`);
+                }
+
+                const inspectionQuestions = response.data.Questions;
+
+                if (inspectionQuestions.length === 0) {
+                    if (allQuestions.length > 0) {
+                        console.log(`No more inspection questions found on page ${currentPage}, but continuing as allQuestions already has data.`);
+                    } else {
+                        console.log(`No more inspection questions found on page ${currentPage}, exiting loop.`);
+                        break;
+                    }
+                }
+
+                allQuestions.push(...inspectionQuestions);
+                console.log(`Fetched ${inspectionQuestions.length} inspection questions from page ${currentPage}`);
+
+                currentPage++;
+            }
+
+            if (allQuestions.length === 0) {
+                console.log('No inspection questions data found from API.');
+                return { success: false, message: 'No inspection questions data found from API.' };
+            }
+
+            // Check if allQuestions already exist in the database before inserting
+            const existingQuestions = await Question.findAll({
+                attributes: ['id'] // Adjust as per your actual primary key or identifier
+            });
+
+            // Extract IDs from existingQuestions
+            const existingQuestionIds = existingQuestions.map(question => question.id);
+
+            // Filter out existing questions
+            const newQuestions = allQuestions.filter(question => !existingQuestionIds.includes(question.id));
+
+            if (newQuestions.length === 0) {
+                console.log('All fetched inspection questions already exist in the database.');
+                return { success: false, message: 'All fetched inspection questions already exist in the database.' };
+            }
+
+            // Example: Assuming Question.bulkCreate is used to insert inspection questions into the database
+            await Question.bulkCreate(newQuestions);
+            console.log(`${newQuestions.length} new inspection questions inserted successfully into the database table.`);
+            return { success: true, message: `${newQuestions.length} new inspection questions inserted successfully into the database table.` };
+
+        } catch (error) {
+            console.error('Error fetching or inserting inspection questions data:', error);
+            return { success: false, message: 'Failed to fetch or insert inspection questions data.', error: error.message };
+        }
+    }
+    static async fetchAllAndPushTraining() {
+        let allTrainings = [];
+        let currentPage = 1;
+
+        try {
+            while (true) {
+                const response = await axios.get(`${DashboardFMController.apiUrl}/training?page=${currentPage}`);
+
+                if (!response.data || response.data.message === 'No Training found.') {
+                    console.log(`No trainings found on page ${currentPage}, exiting loop.`);
+                    break;
+                }
+
+                if (!Array.isArray(response.data.Trainings)) {
+                    console.error(`Invalid response data for trainings on page ${currentPage}. Response data:`, response.data);
+                    throw new Error(`Invalid response data for trainings on page ${currentPage}. Ensure that the response contains an array named "Trainings".`);
+                }
+
+                const trainings = response.data.Trainings;
+
+                if (trainings.length === 0) {
+                    console.log(`No more trainings found on page ${currentPage}, exiting loop.`);
+                    break;
+                }
+
+                allTrainings.push(...trainings);
+                console.log(`Fetched ${trainings.length} trainings from page ${currentPage}`);
+
+                currentPage++;
+            }
+
+            if (allTrainings.length === 0) {
+                console.log('No training data found from API.');
+                return { success: false, message: 'No training data found from API.' };
+            }
+
+            // Inserting trainings in chunks to handle large data
+            const chunkSize = 1000; // Adjust as per your needs
+            for (let i = 0; i < allTrainings.length; i += chunkSize) {
+                const chunk = allTrainings.slice(i, i + chunkSize);
+                await DashboardFMController.insertTrainingsIntoDatabase(chunk);
+            }
+
+            console.log(`${allTrainings.length} trainings inserted successfully into the database.`);
+            return { success: true, message: `${allTrainings.length} trainings inserted successfully into the database.` };
+
+        } catch (error) {
+            console.error('Error fetching or inserting trainings data:', error);
+            return { success: false, message: 'Failed to fetch or insert trainings data.', error: error.message };
+        }
+    }
+    static async insertTrainingsIntoDatabase(trainings) {
+        try {
+            // Insert or update based on appropriate field in Training model
+            await Promise.all(trainings.map(async (training) => {
+                const [insertedTraining, created] = await Training.findOrCreate({
+                    where: { id: training.id }, // Adjust based on your model's primary key
+                    defaults: training // Insert training if not found
+                });
+                
+                if (!created) {
+                    console.log(`Training with ID ${insertedTraining.id} already exists.`);
+                    // Handle update logic if needed
+                }
+            }));
+        } catch (error) {
+            console.error('Error inserting trainings into database:', error);
+            throw error;
+        }
+    }
+    static async fetchAllAndPushTranslation() {
+        let allTranslations = [];
+        let currentPage = 1;
+
+        try {
+            while (true) {
+                const response = await axios.get(`${DashboardFMController.apiUrl}/translation?page=${currentPage}`);
+
+                if (!response.data || response.data.message === 'No Translation found.') {
+                    console.log(`No translations found on page ${currentPage}, exiting loop.`);
+                    break;
+                }
+
+                if (!Array.isArray(response.data.Translations)) {
+                    console.error(`Invalid response data for translations on page ${currentPage}. Response data:`, response.data);
+                    throw new Error(`Invalid response data for translations on page ${currentPage}. Ensure that the response contains an array named "Translations".`);
+                }
+
+                const translations = response.data.Translations;
+
+                if (translations.length === 0) {
+                    console.log(`No more translations found on page ${currentPage}, exiting loop.`);
+                    break;
+                }
+
+                allTranslations.push(...translations);
+                console.log(`Fetched ${translations.length} translations from page ${currentPage}`);
+
+                currentPage++;
+            }
+
+            if (allTranslations.length === 0) {
+                console.log('No translation data found from API.');
+                return { success: false, message: 'No translation data found from API.' };
+            }
+
+            // Inserting translations in chunks to handle large data
+            const chunkSize = 1000; // Adjust as per your needs
+            for (let i = 0; i < allTranslations.length; i += chunkSize) {
+                const chunk = allTranslations.slice(i, i + chunkSize);
+                await DashboardFMController.insertTranslationsIntoDatabase(chunk);
+            }
+
+            console.log(`${allTranslations.length} translations inserted successfully into the database.`);
+            return { success: true, message: `${allTranslations.length} translations inserted successfully into the database.` };
+
+        } catch (error) {
+            console.error('Error fetching or inserting translations data:', error);
+            return { success: false, message: 'Failed to fetch or insert translations data.', error: error.message };
+        }
+    }
+    static async insertTranslationsIntoDatabase(translations) {
+        try {
+            // Insert or update based on appropriate field in Translation model
+            await Promise.all(translations.map(async (translation) => {
+                const [insertedTranslation, created] = await Translation.findOrCreate({
+                    where: { id: translation.id }, // Adjust based on your model's primary key
+                    defaults: translation // Insert translation if not found
+                });
+                
+                if (!created) {
+                    console.log(`Translation with ID ${insertedTranslation.id} already exists.`);
+                    // Handle update logic if needed
+                }
+            }));
+        } catch (error) {
+            console.error('Error inserting translations into database:', error);
+            throw error;
+        }
+    }
+    static async fetchAllAndPushEvaluation() {
+        let allEvaluations = [];
+        let currentPage = 1;
+
+        try {
+            while (true) {
+                const response = await axios.get(`${DashboardFMController.apiUrl}/evaluation?page=${currentPage}`);
+
+                if (!response.data || response.data.message === 'No Evaluation found.') {
+                    console.log(`No evaluations found on page ${currentPage}, exiting loop.`);
+                    break;
+                }
+
+                if (!Array.isArray(response.data.Evaluations)) {
+                    console.error(`Invalid response data for evaluations on page ${currentPage}. Response data:`, response.data);
+                    throw new Error(`Invalid response data for evaluations on page ${currentPage}. Ensure that the response contains an array named "Evaluations".`);
+                }
+
+                const evaluations = response.data.Evaluations;
+
+                if (evaluations.length === 0) {
+                    console.log(`No more evaluations found on page ${currentPage}, exiting loop.`);
+                    break;
+                }
+
+                allEvaluations.push(...evaluations);
+                console.log(`Fetched ${evaluations.length} evaluations from page ${currentPage}`);
+
+                currentPage++;
+            }
+
+            if (allEvaluations.length === 0) {
+                console.log('No evaluation data found from API.');
+                return { success: false, message: 'No evaluation data found from API.' };
+            }
+
+            // Inserting evaluations in chunks to handle large data
+            const chunkSize = 1000; // Adjust as per your needs
+            for (let i = 0; i < allEvaluations.length; i += chunkSize) {
+                const chunk = allEvaluations.slice(i, i + chunkSize);
+                await DashboardFMController.insertEvaluationsIntoDatabase(chunk);
+            }
+
+            console.log(`${allEvaluations.length} evaluations inserted successfully into the database.`);
+            return { success: true, message: `${allEvaluations.length} evaluations inserted successfully into the database.` };
+
+        } catch (error) {
+            console.error('Error fetching or inserting evaluations data:', error);
+            return { success: false, message: 'Failed to fetch or insert evaluations data.', error: error.message };
+        }
+    }
+    static async insertEvaluationsIntoDatabase(evaluations) {
+        try {
+            // Insert or update based on appropriate field in Evaluation model
+            await Promise.all(evaluations.map(async (evaluation) => {
+                const [insertedEvaluation, created] = await Evaluation.findOrCreate({
+                    where: { id: evaluation.id }, // Adjust based on your model's primary key
+                    defaults: evaluation // Insert evaluation if not found
+                });
+                
+                if (!created) {
+                    console.log(`Evaluation with ID ${insertedEvaluation.id} already exists.`);
+                    // Handle update logic if needed
+                }
+            }));
+        } catch (error) {
+            console.error('Error inserting evaluations into database:', error);
+            throw error;
+        }
+    }
+    static async fetchAllAndPushInspectionResponse() {
+        let allResponses = [];
+        let currentPage = 1;
+
+        try {
+            while (true) {
+                const response = await DashboardFMController.axiosInstance.get(`/inspection_response?page=${currentPage}`);
+
+                if (!response.data || response.data.message === 'No Inspection_Response found.') {
+                    console.log(`No inspection responses found on page ${currentPage}, exiting loop.`);
+                    break;
+                }
+
+                if (!Array.isArray(response.data.Responses)) {
+                    console.error(`Invalid response data for inspection responses on page ${currentPage}. Response data:`, response.data);
+                    throw new Error(`Invalid response data for inspection responses on page ${currentPage}. Ensure that the response contains an array named "Responses".`);
+                }
+
+                const inspectionResponses = response.data.Responses;
+
+                if (inspectionResponses.length === 0) {
+                    console.log(`No more inspection responses found on page ${currentPage}, exiting loop.`);
+                    break;
+                }
+
+                allResponses.push(...inspectionResponses);
+                console.log(`Fetched ${inspectionResponses.length} inspection responses from page ${currentPage}`);
+
+                currentPage++;
+            }
+
+            if (allResponses.length === 0) {
+                console.log('No inspection responses data found from API.');
+                return { success: false, message: 'No inspection responses data found from API.' };
+            }
+
+            // Inserting responses in chunks to handle large data
+            const chunkSize = 1000; // Adjust as per your needs
+            for (let i = 0; i < allResponses.length; i += chunkSize) {
+                const chunk = allResponses.slice(i, i + chunkSize);
+                await DashboardFMController.insertResponsesIntoDatabase(chunk);
+            }
+
+            console.log(`${allResponses.length} inspection responses inserted successfully into the database.`);
+            return { success: true, message: `${allResponses.length} inspection responses inserted successfully into the database.` };
+
+        } catch (error) {
+            console.error('Error fetching or inserting inspection responses data:', error);
+            return { success: false, message: 'Failed to fetch or insert inspection responses data.', error: error.message };
+        }
+    }
+
+    static async insertResponsesIntoDatabase(responses) {
+        try {
+            // Insert or update based on appropriate field in Response model
+            await Promise.all(responses.map(async (response) => {
+                const [insertedResponse, created] = await Response.findOrCreate({
+                    where: { id: response.id }, // Adjust based on your model's primary key
+                    defaults: response // Insert response if not found
+                });
+                
+                if (!created) {
+                    console.log(`Response with ID ${insertedResponse.id} already exists.`);
+                    // Handle update logic if needed
+                }
+            }));
+        } catch (error) {
+            console.error('Error inserting inspection responses into database:', error);
+            throw error;
+        }
+    }
+
 }
 
 export default DashboardFMController;
