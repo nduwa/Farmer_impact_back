@@ -8,5 +8,6 @@ userRoutes.post("/signup", UserController.createUser);
 userRoutes.put("/update/:userId", UserController.updateUser);
 userRoutes.get("/user/:userId", UserController.getSingleUser);
 userRoutes.get("/staff", UserController.getAllStaff);
+userRoutes.get("/staff/:userId", UserController.getSingleStaff);
 
 export default userRoutes;

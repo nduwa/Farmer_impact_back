@@ -189,6 +189,34 @@ class UserController {
       console.log(error);
     }
   }
+
+  // get a single staff by id
+  static async getSingleStaff(req, res) {
+    try {
+      const userId = req.params.userId;
+      const user = await Staff.findOne({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        return res.status(404).json({
+          status: "fail",
+          message: `Staff with ID ${userId} not found`,
+        });
+      }
+      return res.status(200).json({
+        status: "Success",
+        message: "Staff retrieved successfully",
+        data: user,
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: "fail",
+        message: error.message,
+      });
+      console.log(error);
+    }
+  }
   //logging in with username and password
   static async login(req, res) {
     try {
