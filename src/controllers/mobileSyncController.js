@@ -285,7 +285,7 @@ class mobileSyncController {
         password: additionalCols.password,
         DayLotNumber: additionalCols.DayLotNumber,
         uploaded_at: uploadedDate,
-        recordid: "",
+        recordid: 0,
         uploaded: 1,
         status: 0,
         approved: 0,
