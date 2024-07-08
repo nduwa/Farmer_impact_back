@@ -67,6 +67,13 @@ class AccessControlController {
         });
       }
 
+      //drop all previous access
+      await Mobile_App.destroy({
+        where: {
+          userid: permissionsArray[0].userid,
+        },
+      });
+
       const savedPermissions = [];
 
       // Loop through the array and save each permission
