@@ -1,4 +1,5 @@
 import axios from 'axios';
+import axiosRetry from 'axios-retry';       
 import Supplier from '../models/rtc_supplier'; // Replace with correct path to Supplier model
 import Station from '../models/rtc_station'; // Replace with correct path to Station model
 import Season from '../models/rtc_seasons'; // Replace with correct path to Season model
@@ -8,6 +9,7 @@ import Staff from '../models/rtc_staff'; // Import your Staff model
 import Roles from '../models/rtc_roles'; // Import your Roles model
 import Farmer from '../models/rtc_farmers'; // Adjust path as per your project structure and model name
 import Household from '../models/rtc_households'; 
+import Group from '../models/rtc_groups'; // Assuming Group is the correct model name
 import AccessControl from '../models/rtc_mobile_app_access_control'; 
 import AppModules from '../models/rtc_mobile_app_modules';
 import Evaluation from '../models/rtc_evaluations'; // Assuming Evaluation is the correct model name
@@ -23,19 +25,34 @@ class DashboardFMController {
     static apiUrl = 'https://dashboard-api.farmerimpact.co.rw';
     static maxRetries = 3;
     static retryDelay = 6000; // milliseconds
+    static requestTimeout = 50000; // Increase timeout to 50 seconds (adjust as needed)
 
     static axiosInstance = axios.create({
         baseURL: DashboardFMController.apiUrl,
-        // You may need to adjust SSL/TLS settings or add additional configuration
-        // For example, to ignore SSL validation (not recommended for production):
-        // httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+        timeout: DashboardFMController.requestTimeout,
     });
+    // Configure axios-retry
+    static configureAxiosRetry() {
+        axiosRetry(DashboardFMController.axiosInstance, {
+            retries: DashboardFMController.maxRetries,
+            retryDelay: (retryCount) => {
+                return retryCount * DashboardFMController.retryDelay;
+            },
+            shouldResetTimeout: true, // Reset timeout on retries
+            retryCondition: (error) => {
+                return axiosRetry.isNetworkError(error) || axiosRetry.isRetryableError(error);
+            },
+        });
+    }
 
     static async fetchAllAndPush(req, res) {
         try {
+            DashboardFMController.configureAxiosRetry(); // Configure retry logic
             const results = await Promise.all([
+                DashboardFMController.fetchAllAndPushFarmerGroups(),
+                DashboardFMController.fetchAllAndPushInspectionResponse(),
                 DashboardFMController.fetchAllAndPushAccessControl(),
-                DashboardFMController.fetchAllAndPushAppModule(),
+                //DashboardFMController.fetchAllAndPushAppModule(),
                 DashboardFMController.fetchAllAndPushSuppliers(),
                 DashboardFMController.fetchAllAndPushReadings(),
                 DashboardFMController.fetchAllAndPushStation(),
@@ -49,8 +66,7 @@ class DashboardFMController {
                 DashboardFMController.fetchAllAndPushInspectionQuestion(),
                 DashboardFMController.fetchAllAndPushTraining(),
                 DashboardFMController.fetchAllAndPushTranslation(),
-                DashboardFMController.fetchAllAndPushEvaluation(),
-                DashboardFMController.fetchAllAndPushInspectionResponse()
+                DashboardFMController.fetchAllAndPushEvaluation()
             ]);
 
             const successMessages = results.filter(result => result.success);
@@ -1189,40 +1205,133 @@ class DashboardFMController {
             throw error;
         }
     }
+
+    
+
+    static async fetchAllAndPushFarmerGroups() {
+        let allGroups = [];
+        let currentPage = 1;
+
+        async function fetchData() {
+            try {
+                const response = await DashboardFMController.axiosInstance.get(`/group?page=${currentPage}`);
+
+                if (!response.data || response.data.message === 'No groups found.') {
+                    console.log(`No groups found on page ${currentPage}, exiting loop.`);
+                    return [];
+                }
+
+                if (!Array.isArray(response.data.Groups)) {
+                    console.error(`Invalid response data for groups on page ${currentPage}. Response data:`, response.data);
+                    throw new Error(`Invalid response data for groups on page ${currentPage}. Ensure that the response contains an array named "Groups".`);
+                }
+
+                return response.data.Groups;
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                throw error; // Let axios-retry handle retries
+            }
+        }
+
+        try {
+            while (true) {
+                const groups = await fetchData();
+
+                if (groups.length === 0) {
+                    console.log(`No more groups found on page ${currentPage}, exiting loop.`);
+                    break;
+                }
+
+                allGroups.push(...groups);
+                console.log(`Fetched ${groups.length} groups from page ${currentPage}`);
+
+                currentPage++;
+            }
+
+            if (allGroups.length === 0) {
+                console.log('No group data found from API.');
+                return { success: false, message: 'No group data found from API.' };
+            }
+
+            // Inserting groups in chunks to handle large data
+            const chunkSize = 1000; // Adjust as per your needs
+            for (let i = 0; i < allGroups.length; i += chunkSize) {
+                const chunk = allGroups.slice(i, i + chunkSize);
+                await DashboardFMController.insertGroupsIntoDatabase(chunk);
+            }
+
+            console.log(`${allGroups.length} groups inserted successfully into the database.`);
+            return { success: true, message: `${allGroups.length} groups inserted successfully into the database.` };
+
+        } catch (error) {
+            console.error('Error inserting groups data:', error);
+            throw error; // Propagate the error for higher-level handling
+        }
+    }
+
+    static async insertGroupsIntoDatabase(groups) {
+        try {
+            // Insert or update based on appropriate field in Group model
+            await Promise.all(groups.map(async (group) => {
+                const [insertedGroup, created] = await Group.findOrCreate({
+                    where: { id: group.id }, // Adjust based on your model's primary key
+                    defaults: group // Insert group if not found
+                });
+                
+                if (!created) {
+                    console.log(`Group with ID ${insertedGroup.id} already exists.`);
+                    // Handle update logic if needed
+                }
+            }));
+        } catch (error) {
+            console.error('Error inserting groups into database:', error);
+            throw error; // Propagate the error for higher-level handling
+        }
+    }
+
     static async fetchAllAndPushInspectionResponse() {
         let allResponses = [];
         let currentPage = 1;
 
-        try {
-            while (true) {
+        async function fetchData() {
+            try {
                 const response = await DashboardFMController.axiosInstance.get(`/inspection_response?page=${currentPage}`);
 
-                if (!response.data || response.data.message === 'No Inspection_Response found.') {
-                    console.log(`No inspection responses found on page ${currentPage}, exiting loop.`);
+                if (!response.data || response.data.message === 'No responses found.') {
+                    console.log(`No responses found on page ${currentPage}, exiting loop.`);
+                    return [];
+                }
+
+                if (!Array.isArray(response.data.ResponsesData)) {
+                    console.error(`Invalid response data for responses on page ${currentPage}. Response data:`, response.data);
+                    throw new Error(`Invalid response data for responses on page ${currentPage}. Ensure that the response contains an array named "Response".`);
+                }
+
+                return response.data.ResponsesData;
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                throw error; // Let axios-retry handle retries
+            }
+        }
+
+        try {
+            while (true) {
+                const responses = await fetchData();
+
+                if (responses.length === 0) {
+                    console.log(`No more responses found on page ${currentPage}, exiting loop.`);
                     break;
                 }
 
-                if (!Array.isArray(response.data.Responses)) {
-                    console.error(`Invalid response data for inspection responses on page ${currentPage}. Response data:`, response.data);
-                    throw new Error(`Invalid response data for inspection responses on page ${currentPage}. Ensure that the response contains an array named "Responses".`);
-                }
-
-                const inspectionResponses = response.data.Responses;
-
-                if (inspectionResponses.length === 0) {
-                    console.log(`No more inspection responses found on page ${currentPage}, exiting loop.`);
-                    break;
-                }
-
-                allResponses.push(...inspectionResponses);
-                console.log(`Fetched ${inspectionResponses.length} inspection responses from page ${currentPage}`);
+                allResponses.push(...responses);
+                console.log(`Fetched ${responses.length} responses from page ${currentPage}`);
 
                 currentPage++;
             }
 
             if (allResponses.length === 0) {
-                console.log('No inspection responses data found from API.');
-                return { success: false, message: 'No inspection responses data found from API.' };
+                console.log('No response data found from API.');
+                return { success: false, message: 'No response data found from API.' };
             }
 
             // Inserting responses in chunks to handle large data
@@ -1232,12 +1341,12 @@ class DashboardFMController {
                 await DashboardFMController.insertResponsesIntoDatabase(chunk);
             }
 
-            console.log(`${allResponses.length} inspection responses inserted successfully into the database.`);
-            return { success: true, message: `${allResponses.length} inspection responses inserted successfully into the database.` };
+            console.log(`${allResponses.length} responses inserted successfully into the database.`);
+            return { success: true, message: `${allResponses.length} responses inserted successfully into the database.` };
 
         } catch (error) {
-            console.error('Error fetching or inserting inspection responses data:', error);
-            return { success: false, message: 'Failed to fetch or insert inspection responses data.', error: error.message };
+            console.error('Error inserting responses data:', error);
+            throw error; // Propagate the error for higher-level handling
         }
     }
 
@@ -1256,8 +1365,8 @@ class DashboardFMController {
                 }
             }));
         } catch (error) {
-            console.error('Error inserting inspection responses into database:', error);
-            throw error;
+            console.error('Error inserting responses into database:', error);
+            throw error; // Propagate the error for higher-level handling
         }
     }
 
