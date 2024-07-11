@@ -1,5 +1,5 @@
 import axios from 'axios';
-import axiosRetry from 'axios-retry';       
+import axiosRetry from 'axios-retry';
 import Supplier from '../models/rtc_supplier'; // Replace with correct path to Supplier model
 import Station from '../models/rtc_station'; // Replace with correct path to Station model
 import Season from '../models/rtc_seasons'; // Replace with correct path to Season model
@@ -8,9 +8,9 @@ import Users from '../models/rtc_users'; // Import your Users model
 import Staff from '../models/rtc_staff'; // Import your Staff model
 import Roles from '../models/rtc_roles'; // Import your Roles model
 import Farmer from '../models/rtc_farmers'; // Adjust path as per your project structure and model name
-import Household from '../models/rtc_households'; 
+import Household from '../models/rtc_households';
 import Group from '../models/rtc_groups'; // Assuming Group is the correct model name
-import AccessControl from '../models/rtc_mobile_app_access_control'; 
+import AccessControl from '../models/rtc_mobile_app_access_control';
 import AppModules from '../models/rtc_mobile_app_modules';
 import Evaluation from '../models/rtc_evaluations'; // Assuming Evaluation is the correct model name
 import Translation from '../models/rtc_translations'; // Assuming Translation is the correct model name
@@ -20,6 +20,7 @@ import Question from '../models/rtc_inspection_questions'; // Assuming Question 
 import Answer from '../models/rtc_inspection_answers'; // Assuming Answer is the correct model name
 import transporter from '../database/mailConfig'; // Import your nodemailer transporter
 import mailOptions from '../database/mailOption'; // Define your mailOptions
+import TrainingAttendance from '../models/rtc_training_attendance'; // Adjust path to your model
 
 class DashboardFMController {
     static apiUrl = 'https://dashboard-api.farmerimpact.co.rw';
@@ -49,6 +50,7 @@ class DashboardFMController {
         try {
             DashboardFMController.configureAxiosRetry(); // Configure retry logic
             const results = await Promise.all([
+                DashboardFMController.fetchAllAndPushTrainingAttendance(),
                 DashboardFMController.fetchAllAndPushFarmerGroups(),
                 DashboardFMController.fetchAllAndPushInspectionResponse(),
                 DashboardFMController.fetchAllAndPushAccessControl(),
@@ -67,6 +69,7 @@ class DashboardFMController {
                 DashboardFMController.fetchAllAndPushTraining(),
                 DashboardFMController.fetchAllAndPushTranslation(),
                 DashboardFMController.fetchAllAndPushEvaluation()
+                
             ]);
 
             const successMessages = results.filter(result => result.success);
@@ -271,49 +274,49 @@ class DashboardFMController {
         let allReadings = [];
         let currentPage = 1;
         let continueFetching = true; // Flag to control loop continuation
-    
+
         try {
             while (continueFetching) {
                 const response = await axios.get(`${DashboardFMController.apiUrl}/readings?page=${currentPage}`);
-    
+
                 if (!response.data || response.data.message === 'No readings found.') {
                     console.log(`No readings found on page ${currentPage}, exiting loop.`);
                     break; // Exit loop if no more readings are found
                 }
-    
+
                 if (!Array.isArray(response.data.Readings)) {
                     console.error(`Invalid response data for readings on page ${currentPage}. Response data:`, response.data);
                     // Throw an error and handle it accordingly
                     throw new Error(`Invalid response data for readings on page ${currentPage}. Ensure that the response contains an array named "Readings".`);
                 }
-    
+
                 const readings = response.data.Readings;
-    
+
                 if (readings.length === 0) {
                     console.log(`No more readings found on page ${currentPage}, exiting loop.`);
                     break; // Exit loop if current page has no readings
                 }
-    
+
                 allReadings.push(...readings);
                 console.log(`Fetched ${readings.length} readings from page ${currentPage}`);
-    
+
                 currentPage++;
             }
-    
+
             // Check if allReadings has data after the loop ends
             if (allReadings.length === 0) {
                 console.log('No readings data found from API.');
                 return { success: false, message: 'No readings data found from API.' };
             }
-    
+
             // Fetch existing reading keys from the database
             const existingReadingKeys = (await Readings.findAll({
                 attributes: ['__kp_Reading']
             })).map(reading => reading.__kp_Reading);
-    
+
             // Filter out new readings that are not already in the database
             const newReadings = allReadings.filter(reading => !existingReadingKeys.includes(reading.__kp_Reading));
-    
+
             // Bulk insert new readings into the database
             if (newReadings.length > 0) {
                 await Readings.bulkCreate(newReadings);
@@ -323,7 +326,7 @@ class DashboardFMController {
                 console.log('No new updated readings to insert into the database table.');
                 return { success: false, message: 'No new updated readings to insert into the database table.' };
             }
-    
+
         } catch (error) {
             console.error('Error fetching or inserting readings data:', error);
             return { success: false, message: 'Failed to fetch or insert readings data.', error: error.message };
@@ -711,7 +714,7 @@ class DashboardFMController {
                     where: { __kp_Farmer: farmer.__kp_Farmer },
                     defaults: farmer // Insert farmer if not found
                 });
-                
+
                 if (!created) {
                     console.log(`Farmer with __kp_Farmer ${insertedFarmer.__kp_Farmer} already exists.`);
                     // Handle update logic if needed
@@ -782,7 +785,7 @@ class DashboardFMController {
                     where: { __kp_Household: household.__kp_Household },
                     defaults: household // Insert household if not found
                 });
-                
+
                 if (!created) {
                     console.log(`Household with __kp_Household ${insertedHousehold.__kp_Household} already exists.`);
                     // Handle update logic if needed
@@ -1054,7 +1057,7 @@ class DashboardFMController {
                     where: { id: training.id }, // Adjust based on your model's primary key
                     defaults: training // Insert training if not found
                 });
-                
+
                 if (!created) {
                     console.log(`Training with ID ${insertedTraining.id} already exists.`);
                     // Handle update logic if needed
@@ -1124,7 +1127,7 @@ class DashboardFMController {
                     where: { id: translation.id }, // Adjust based on your model's primary key
                     defaults: translation // Insert translation if not found
                 });
-                
+
                 if (!created) {
                     console.log(`Translation with ID ${insertedTranslation.id} already exists.`);
                     // Handle update logic if needed
@@ -1194,7 +1197,7 @@ class DashboardFMController {
                     where: { id: evaluation.id }, // Adjust based on your model's primary key
                     defaults: evaluation // Insert evaluation if not found
                 });
-                
+
                 if (!created) {
                     console.log(`Evaluation with ID ${insertedEvaluation.id} already exists.`);
                     // Handle update logic if needed
@@ -1206,7 +1209,7 @@ class DashboardFMController {
         }
     }
 
-    
+
 
     static async fetchAllAndPushFarmerGroups() {
         let allGroups = [];
@@ -1277,7 +1280,7 @@ class DashboardFMController {
                     where: { id: group.id }, // Adjust based on your model's primary key
                     defaults: group // Insert group if not found
                 });
-                
+
                 if (!created) {
                     console.log(`Group with ID ${insertedGroup.id} already exists.`);
                     // Handle update logic if needed
@@ -1358,7 +1361,7 @@ class DashboardFMController {
                     where: { id: response.id }, // Adjust based on your model's primary key
                     defaults: response // Insert response if not found
                 });
-                
+
                 if (!created) {
                     console.log(`Response with ID ${insertedResponse.id} already exists.`);
                     // Handle update logic if needed
@@ -1370,6 +1373,71 @@ class DashboardFMController {
         }
     }
 
+    static async fetchAllAndPushTrainingAttendance() {
+        let allTrainingAttendance = [];
+        let currentPage = 1;
+
+        try {
+            while (true) {
+                const response = await DashboardFMController.axiosInstance.get(`/training_attendance?page=${currentPage}`);
+
+                if (!response.data || response.data.message === 'No training attendance records found.') {
+                    console.log(`No training attendance records found on page ${currentPage}, exiting loop.`);
+                    break;
+                }
+
+                if (!Array.isArray(response.data.Training_Attendance)) {
+                    console.error(`Invalid response data for training attendance records on page ${currentPage}. Response data:`, response.data);
+                    throw new Error(`Invalid response data for training attendance records on page ${currentPage}. Ensure that the response contains an array named "Training_Attendance".`);
+                }
+
+                const trainingAttendance = response.data.Training_Attendance;
+                allTrainingAttendance.push(...trainingAttendance);
+                console.log(`Fetched ${trainingAttendance.length} training attendance records from page ${currentPage}`);
+
+                currentPage++;
+            }
+
+            if (allTrainingAttendance.length === 0) {
+                console.log('No training attendance records found from API.');
+                return { success: false, message: 'No training attendance records found from API.' };
+            }
+
+            // Inserting records in chunks to handle large data
+            const chunkSize = 1000; // Adjust as per your needs
+            for (let i = 0; i < allTrainingAttendance.length; i += chunkSize) {
+                const chunk = allTrainingAttendance.slice(i, i + chunkSize);
+                await DashboardFMController.insertTrainingAttendanceIntoDatabase(chunk);
+            }
+
+            console.log(`${allTrainingAttendance.length} training attendance records inserted successfully into the database.`);
+            return { success: true, message: `${allTrainingAttendance.length} training attendance records inserted successfully into the database.` };
+
+        } catch (error) {
+            console.error('Error fetching or inserting training attendance records:', error);
+            throw error; // Propagate the error for higher-level handling
+        }
+    }
+
+    static async insertTrainingAttendanceIntoDatabase(trainingAttendance) {
+        try {
+            // Insert or update based on appropriate field in TrainingAttendance model
+            await Promise.all(trainingAttendance.map(async (attendance) => {
+                const [insertedAttendance, created] = await TrainingAttendance.findOrCreate({
+                    where: { id: attendance.id }, // Adjust based on your model's primary key
+                    defaults: attendance, // Insert attendance record if not found
+                });
+
+                if (!created) {
+                    console.log(`Training attendance record with ID ${insertedAttendance.id} already exists.`);
+                    // Handle update logic if needed
+                }
+            }));
+        } catch (error) {
+            console.error('Error inserting training attendance records into database:', error);
+            throw error; // Propagate the error for higher-level handling
+        }
+    }
 }
 
 export default DashboardFMController;
