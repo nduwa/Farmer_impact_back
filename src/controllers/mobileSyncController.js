@@ -532,7 +532,7 @@ class mobileSyncController {
         order: [["id", "DESC"]],
       });
 
-      let newSheetid = lastSheetId.id;
+      let newSheetid = lastSheetId ? lastSheetId.id : 0;
 
       const addedAttendanceSheet = await training_attendance_sheet.create({
         id: newSheetid + 1,
