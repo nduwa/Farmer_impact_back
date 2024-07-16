@@ -9,6 +9,7 @@ module.exports = {
     host: process.env.DB_HOST,
     url:"mysql://root:@localhost:3306/farmerim_rtc2",
     dialect: 'mysql',
+    dialectModule: require('mysql2'),
     logging: false
   },
   // test: {
