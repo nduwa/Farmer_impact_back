@@ -3,7 +3,7 @@ import Users from "../models/rtc_users";
 import userValidationSchema from "../validations/userValidations";
 import loginValidationSchema from "../validations/loginValidation";
 import bcrypt from "bcrypt";
-
+import User_Access from "../models/rtc_temp_user_access";
 import { generateRandomString } from "../helpers/randomStringGenerator";
 import Staff from "../models/rtc_staff";
 import * as dotenv from "dotenv";
@@ -261,7 +261,17 @@ class UserController {
           message: "No staff found for the given user",
         });
       }
-
+      const userID = staff.userID;
+      const userAccess = await User_Access.findOne({
+        where: { staff_ID: userID },
+      });
+      console.log("hehehe", userAccess);
+      if (userAccess.state === "Inactive") {
+        return res.status(404).json({
+          status: "fail",
+          message: "Only active users are allowed to login ",
+        });
+      }
       const token = generateToken(user, appLogin, staff);
       res.status(200).json({
         status: "success",
@@ -269,7 +279,6 @@ class UserController {
         token: token,
       });
     } catch (err) {
-      console.error(errorr);
       res.status(500).json({
         status: "fail",
         message: err.message,

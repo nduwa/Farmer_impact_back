@@ -103,5 +103,44 @@ class UserAccessController {
       });
     }
   }
+  static async deactivateUser(req, res) {
+    try {
+      const id = req.query.id;
+   
+      const user = await User_access.findOne({
+        where: {
+          staff_ID: id,
+        },
+      });
+
+      if (!user) {
+        return res.status(404).json({
+          status: "Failed",
+          message: "User not found",
+        });
+      }
+
+      if (user.state === "Inactive") {
+        return res.status(400).json({
+          status: "Failed",
+          message: "User is already deactivated",
+        });
+      }
+
+      user.state = "Inactive";
+      await user.save();
+
+      return res.status(200).json({
+        status: "success",
+        message: "User deactivated successfully!",
+        data: user,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: "Failed",
+        error: error.message,
+      });
+    }
+  }
 }
 export default UserAccessController;
