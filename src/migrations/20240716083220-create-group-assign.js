@@ -12,7 +12,23 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
+      farmerid: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      farmer_name: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
       _kf_station: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      station_name: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      station_id: {
         type: Sequelize.STRING,
         allowNull: false,
       },
@@ -20,11 +36,31 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
+      _kf_Household: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
       kf_group_old: {
         type: Sequelize.STRING,
         allowNull: false,
       },
+      group_name_old: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      group_id_old: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
       kf_group_new: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      group_name_new: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      group_id_new: {
         type: Sequelize.STRING,
         allowNull: false,
       },

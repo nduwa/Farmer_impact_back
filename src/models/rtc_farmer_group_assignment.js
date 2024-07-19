@@ -16,7 +16,23 @@ const GroupAssignment = sequelize.define("rtc_farmer_group_assignment", {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  farmerid: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  farmer_name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
   _kf_station: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  station_name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  station_id: {
     type: DataTypes.STRING,
     allowNull: false,
   },
@@ -24,11 +40,31 @@ const GroupAssignment = sequelize.define("rtc_farmer_group_assignment", {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  _kf_Household: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
   kf_group_old: {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  group_name_old: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  group_id_old: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
   kf_group_new: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  group_name_new: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  group_id_new: {
     type: DataTypes.STRING,
     allowNull: false,
   },
