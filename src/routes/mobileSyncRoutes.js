@@ -80,9 +80,13 @@ mobileSyncRoutes.post(
   "/farmers/registration",
   mobileSyncController.submitFarmer
 );
-mobileSyncRoutes.patch(
-  "/farmers/deletion",
-  mobileSyncController.farmerSoftDelete
+mobileSyncRoutes.post(
+  "/groups/status",
+  mobileSyncController.groupStatusChanges
+);
+mobileSyncRoutes.post(
+  "/farmer/assign",
+  mobileSyncController.groupAssignChanges
 );
 
 export default mobileSyncRoutes;
