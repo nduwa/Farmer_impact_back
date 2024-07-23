@@ -5,11 +5,21 @@ import InspectionQuestion from "../models/rtc_inspection_questions";
 import InspectionAnswer from "../models/rtc_inspection_answers";
 import InspectionResponse from "../models/rtc_inspection_responses";
 import { Sequelize } from "../models";
-
+const { Op } = require('sequelize');
 class InspectionsController {
   static async getAllUserInspections(req, res) {
     try {
-      const allInspections = await Inspection.findAll();
+      const currentYear = new Date().getFullYear();
+      const startDate = new Date(currentYear - 1, 6, 1); // July of last year
+      const endDate = new Date(currentYear, 7, 31); // August of this year
+      const allInspections = await Inspection.findAll({
+        where: {
+          created_at: {
+            [Op.between]: [startDate, endDate]
+          }
+        }
+      });
+      
       if (!allInspections) {
         return res.status(404).json({
           status: "fail",
@@ -22,6 +32,7 @@ class InspectionsController {
         data: allInspections,
       });
     } catch (error) {
+      console.log("yuhuu", error)
       return res.status(500).json({
         status: "error",
         message: "Internal server error",

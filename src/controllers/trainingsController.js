@@ -1,8 +1,11 @@
 import Training from "../models/rtc_training";
 
+
+
 class TrainingController {
   static async getAllTraining(req, res) {
     try {
+
       const allTrainings = await Training.findAll();
       if (!allTrainings || allTrainings.length === 0) {
         return res.status(404).json({
