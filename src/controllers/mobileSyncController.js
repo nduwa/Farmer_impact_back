@@ -13,9 +13,11 @@ import inspection from "../models/rtc_inspections";
 import inspections_responses from "../models/rtc_inspection_responses";
 import training_attendance from "../models/rtc_training_attendance";
 import training_attendance_sheet from "../models/rtc_attendance_sheets";
+import farmer_group_assignment from "../models/rtc_farmer_group_assignment";
 import { nextChar } from "../helpers/nextChar";
 import { getHouseholdid } from "../helpers/getHouseholdid";
 import { Op } from "sequelize";
+import { getCurrentDate } from "../helpers/getCurrentDate";
 
 class mobileSyncController {
   static async retrieveSupplier(req, res) {
@@ -277,14 +279,12 @@ class mobileSyncController {
         nextId = 1; // Set initial ID if no records exist
       }
 
-      let uploadedDate = new Date();
-
       const restOfTheData = {
         id: nextId,
         username: additionalCols.username,
         password: additionalCols.password,
         DayLotNumber: additionalCols.DayLotNumber,
-        uploaded_at: uploadedDate,
+        uploaded_at: getCurrentDate(),
         recordid: 0,
         uploaded: 1,
         status: 0,
@@ -381,7 +381,7 @@ class mobileSyncController {
         nextId = 1; // Set initial ID if no records exist
       }
 
-      let uploadedDate = new Date();
+      let uploadedDate = getCurrentDate();
 
       const newInspection = await inspection.create({
         ...inspectionData,
@@ -496,25 +496,47 @@ class mobileSyncController {
       });
 
       let newid = lastSessionId.id;
-      for (const farmer of allParticipants) {
+
+      if (+participants > 1) {
+        for (const farmer of allParticipants) {
+          let tmpObj = {
+            id: newid + 1,
+            created_at,
+            training_course_id,
+            __kf_farmer: farmer,
+            __kf_group: allGroups[allParticipants.indexOf(farmer)],
+            status: 1,
+            __kf_attendance,
+            username,
+            password,
+            uuid,
+            uploaded_at: getCurrentDate(),
+            _kf_training,
+            lo,
+            la,
+          };
+
+          newid++;
+          attendances.push(tmpObj);
+        }
+      } else if (+participants == 1) {
         let tmpObj = {
           id: newid + 1,
           created_at,
           training_course_id,
-          __kf_farmer: farmer,
-          __kf_group: allGroups[allParticipants.indexOf(farmer)],
+          __kf_farmer,
+          __kf_group,
           status: 1,
           __kf_attendance,
           username,
           password,
           uuid,
-          uploaded_at: new Date(),
+          uploaded_at: getCurrentDate(),
           _kf_training,
           lo,
           la,
         };
 
-        newid++;
         attendances.push(tmpObj);
       }
 
@@ -540,7 +562,7 @@ class mobileSyncController {
         uuid,
         filepath,
         status: 1,
-        uploaded_at: new Date(),
+        uploaded_at: getCurrentDate(),
       });
 
       if (!addedAttendanceSheet)
@@ -717,7 +739,7 @@ class mobileSyncController {
           type: newFarmer.type,
           sync_farmers: newFarmer.sync_farmers,
           uploaded: newFarmer.uploaded,
-          uploaded_at: new Date(),
+          uploaded_at: getCurrentDate(),
           Area_Small: newFarmer.Area_Small,
           Area_Smallest: newFarmer.Area_Smallest,
           Trees: newFarmer.Trees,
@@ -799,6 +821,96 @@ class mobileSyncController {
       res.status(200).json({
         status: "success",
         processedData,
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ status: "fail", error });
+    }
+  }
+
+  static async groupStatusChanges(req, res) {
+    try {
+      const { groupChanges } = req.body;
+
+      let idsToEnable = [];
+      let idsToDisable = [];
+
+      for (const change of groupChanges) {
+        if (change.active == 1) {
+          idsToEnable.push(change._kf_Group);
+        } else {
+          idsToDisable.push(change._kf_Group);
+        }
+      }
+      let updateStatus_enable;
+      let updateStatus_disable;
+
+      if (idsToEnable.length > 0) {
+        updateStatus_enable = await groups.update(
+          { active: "1" },
+          { where: { __kp_Group: { [Op.in]: idsToEnable } } }
+        );
+
+        if (!updateStatus_enable) {
+          return res
+            .status(500)
+            .json({ status: "fail", message: "activating groups failed" });
+        }
+      }
+
+      if (idsToDisable.length > 0) {
+        updateStatus_disable = await groups.update(
+          { active: "0" },
+          { where: { __kp_Group: { [Op.in]: idsToDisable } } }
+        );
+
+        if (!updateStatus_disable) {
+          return res
+            .status(500)
+            .json({ status: "fail", message: "deactivating groups failed" });
+        }
+      }
+
+      res.status(200).json({
+        status: "success",
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ status: "fail", error });
+    }
+  }
+
+  static async groupAssignChanges(req, res) {
+    try {
+      const { groupChanges } = req.body;
+      let allAssignChanges = [];
+
+      for (let change of groupChanges) {
+        const { id, ...changeMod } = change;
+        console.log(changeMod);
+        let tmpObj = {
+          ...changeMod,
+          ...{
+            uploaded_at: getCurrentDate(),
+            _kf_Supplier: change._kf_supplier,
+          },
+        };
+
+        allAssignChanges.push(tmpObj);
+      }
+
+      const addedChanges = await farmer_group_assignment.bulkCreate(
+        allAssignChanges
+      );
+
+      if (!addedChanges)
+        return res.status(500).json({
+          status: "fail",
+          message: `submitting group changes failed`,
+        });
+
+      res.status(200).json({
+        status: "success",
       });
     } catch (error) {
       console.log(error);

@@ -264,7 +264,7 @@ class UserController {
       const userAccess = await User_Access.findOne({
         where: { staff_ID: userID },
       });
-      console.log("hehehe", userAccess);
+
       if (userAccess.state === "Inactive") {
         return res.status(404).json({
           status: "fail",
