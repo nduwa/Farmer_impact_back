@@ -4,7 +4,8 @@ import Season from "../models/rtc_seasons";
 import Day_lot from "../models/rtc_day_lot_data";
 import Bucket from "../models/bucketing";
 import Dry from "../models/rtc_drying";
-import { generateRandomString } from "../helpers/randomStringGenerator";
+// import { generateRandomString } from "../helpers/randomStringGenerator";
+import generateUUID from "../helpers/randomStringGenerator";
 import Lock_cherries from "../models/rtc_lock_cherry_lot";
 class CoffeePurchaseController {
   //get all transactions/journals
@@ -305,7 +306,7 @@ class CoffeePurchaseController {
     try {
       const journalId = req.params.journalId;
       console.log("site", journalId);
-      const _kp_Log = generateRandomString(32);
+      const _kp_Log = generateUUID(32);
       const seasonData = await Season.findOne({
         attributes: ["__kp_Season"],
         order: [["id", "DESC"]],
