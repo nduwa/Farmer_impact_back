@@ -14,6 +14,8 @@ import inspections_responses from "../models/rtc_inspection_responses";
 import training_attendance from "../models/rtc_training_attendance";
 import training_attendance_sheet from "../models/rtc_attendance_sheets";
 import farmer_group_assignment from "../models/rtc_farmer_group_assignment";
+import field_farmers from "../models/rtc_field_farmers";
+
 import { nextChar } from "../helpers/nextChar";
 import { getHouseholdid } from "../helpers/getHouseholdid";
 import { Op } from "sequelize";
@@ -334,7 +336,7 @@ class mobileSyncController {
       let processedTransactions = [];
 
       for (const tr of transactionsReceived) {
-        let tmpObj = { ...tr, ...restOfTheData };
+        let tmpObj = { ...tr, ...restOfTheData, ...{ id: nextId++ } };
         processedTransactions.push(tmpObj);
       }
 
@@ -584,6 +586,50 @@ class mobileSyncController {
 
   static async submitFarmer(req, res) {
     try {
+      const newFarmers = req.body;
+
+      if (!newFarmers)
+        return res.status(400).json({
+          status: "fail",
+          message: `no data received`,
+        });
+
+      const lastRecord = await field_farmers.findOne({
+        order: [["id", "DESC"]],
+      });
+
+      let nextId;
+      if (lastRecord) {
+        nextId = lastRecord.id + 1; // Increment the ID
+      } else {
+        nextId = 1; // Set initial ID if no records exist
+      }
+
+      let processedFarmers = [];
+
+      for (const farmer of newFarmers) {
+        let tmpObj = { ...farmer, ...{ id: nextId++ } };
+        processedFarmers.push(tmpObj);
+      }
+
+      const addedFarmers = await field_farmers.bulkCreate(processedFarmers);
+
+      if (!addedFarmers)
+        return res
+          .status(500)
+          .json({ status: "fail", message: "could not store new farmers" });
+
+      return res.status(200).json({
+        status: "success",
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ status: "fail", error });
+    }
+  }
+
+  static async submitFarmerDirect(req, res) {
+    try {
       const submittedFarmers = req.body;
 
       if (submittedFarmers.length < 1)
@@ -696,6 +742,7 @@ class mobileSyncController {
             householdid,
             recordid: newhhRecordid,
             farmerid,
+            STP_Weight: 0,
           };
 
           hhArray.push({ ...actualHouseholdData, ...tmphhObj });
@@ -887,7 +934,6 @@ class mobileSyncController {
 
       for (let change of groupChanges) {
         const { id, ...changeMod } = change;
-        console.log(changeMod);
         let tmpObj = {
           ...changeMod,
           ...{
