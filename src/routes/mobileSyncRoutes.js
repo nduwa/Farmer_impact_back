@@ -88,5 +88,9 @@ mobileSyncRoutes.post(
   "/farmer/assign",
   mobileSyncController.groupAssignChanges
 );
+mobileSyncRoutes.post(
+  "/farmer/report",
+  mobileSyncController.submitFieldWeeklyReports
+);
 
 export default mobileSyncRoutes;
