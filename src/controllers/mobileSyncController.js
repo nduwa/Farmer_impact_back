@@ -15,9 +15,8 @@ import training_attendance from "../models/rtc_training_attendance";
 import training_attendance_sheet from "../models/rtc_attendance_sheets";
 import farmer_group_assignment from "../models/rtc_farmer_group_assignment";
 import field_farmers from "../models/rtc_field_farmers";
+import weekly_reports from "../models/rtc_field_weekly_reports";
 
-import { nextChar } from "../helpers/nextChar";
-import { getHouseholdid } from "../helpers/getHouseholdid";
 import { Op } from "sequelize";
 import { getCurrentDate } from "../helpers/getCurrentDate";
 
@@ -628,214 +627,6 @@ class mobileSyncController {
     }
   }
 
-  static async submitFarmerDirect(req, res) {
-    try {
-      const submittedFarmers = req.body;
-
-      if (submittedFarmers.length < 1)
-        return res.status(400).json({
-          status: "fail",
-          message: `incomplete data`,
-        });
-
-      const farmers_lastRecords = await farmers.findAll({
-        limit: 10,
-        order: [["id", "DESC"]],
-      });
-
-      const farmers_last_recordid = await farmers.findOne({
-        order: [["recordid", "DESC"]],
-      });
-
-      const hh_lastRecords = await households.findAll({
-        limit: 10,
-        order: [["id", "DESC"]],
-      });
-
-      const hh_last_recordid = await farmers.findOne({
-        order: [["recordid", "DESC"]],
-      });
-
-      let last_hhids = [];
-      let lastOtherhhIds = {
-        id: hh_lastRecords[0].dataValues.id,
-      };
-
-      let last_farmerids = [];
-      let lastOtherFarmerIds = {
-        id: farmers_lastRecords[0].dataValues.id,
-      };
-
-      for (const record of farmers_lastRecords) {
-        let tmp_farmerid = record.dataValues.farmerid;
-        if (tmp_farmerid.length < 1) continue;
-        last_farmerids.push(+tmp_farmerid.slice(1, -1));
-      }
-      for (const hhrecord of hh_lastRecords) {
-        let tmp_hhid = hhrecord.dataValues.householdid;
-        if (tmp_hhid.length < 1) continue;
-        last_hhids.push(+tmp_hhid.slice(1));
-      }
-
-      let current_farmerid = last_farmerids.sort()[last_farmerids.length - 1];
-      let current_hhid = last_hhids.sort()[last_hhids.length - 1];
-      let processed_hh = [];
-      let processed_farmerids = [];
-      let farmerArray = [];
-      let hhArray = [];
-
-      let newhhId = +lastOtherhhIds.id;
-      let newhhRecordid = +hh_last_recordid.recordid;
-
-      let newFarmerId = +lastOtherFarmerIds.id;
-      let newFarmerRecordid = +farmers_last_recordid.recordid;
-
-      for (const newFarmer of submittedFarmers) {
-        let tmpFarmerObj = {};
-        let tmphhObj = {};
-        let farmerid = "";
-        let householdid = "";
-        let zprimary = "";
-        let hh_level = "A";
-
-        if (newFarmer.farmerid === "1") {
-          current_farmerid += 1;
-          current_hhid += 1;
-          farmerid = `F${current_farmerid}A`;
-          householdid = `H${current_hhid}`;
-          zprimary = `${farmerid} ${newFarmer.Name}`;
-          processed_hh.push({ KF: newFarmer._kf_Household, ID: householdid });
-          processed_farmerids.push(farmerid);
-
-          newhhId += 1;
-          newhhRecordid += 1;
-
-          let actualHouseholdData = {
-            __kp_Household: newFarmer.__kp_Household,
-            _kf_Group: newFarmer._kf_Group,
-            _kf_Location: newFarmer._kf_Location,
-            _kf_Station: newFarmer._kf_Station,
-            _kf_Supplier: newFarmer._kf_Supplier,
-            Area_Small: newFarmer.Area_Small,
-            Area_Smallest: newFarmer.Area_Smallest,
-            created_at: newFarmer.created_at,
-            type: newFarmer.type,
-            group_id: newFarmer.group_id,
-            STP_Weight: newFarmer.STP_Weight,
-            number_of_plots_with_coffee: newFarmer.number_of_plots_with_coffee,
-            Trees_Producing: newFarmer.Trees_Producing,
-            Trees: newFarmer.Trees,
-            Longitude: newFarmer.Longitude,
-            Latitude: newFarmer.Latitude,
-            Children: newFarmer.Children,
-            Childen_gender: newFarmer.Childen_gender,
-            Childen_below_18: newFarmer.Childen_below_18,
-            status: newFarmer.status,
-            inspectionId: newFarmer.inspectionId,
-            cafeId: newFarmer.cafeId,
-            InspectionStatus: newFarmer.InspectionStatus,
-          };
-
-          tmphhObj = {
-            id: newhhId,
-            z_Farmer_Primary: zprimary,
-            householdid,
-            recordid: newhhRecordid,
-            farmerid,
-            STP_Weight: 0,
-          };
-
-          hhArray.push({ ...actualHouseholdData, ...tmphhObj });
-        } else if (newFarmer.farmerid === "2") {
-          for (const hh of processed_hh) {
-            if (hh.KF === newFarmer._kf_Household)
-              hh_level = nextChar(hh_level);
-          }
-          farmerid = `F${current_farmerid}${hh_level}`;
-          processed_hh.push(newFarmer._kf_Household);
-          processed_farmerids.push(farmerid);
-        }
-
-        newFarmerId += 1;
-        newFarmerRecordid += 1;
-
-        let actualFarmerData = {
-          __kp_Farmer: newFarmer.__kp_Farmer,
-          _kf_Group: newFarmer._kf_Group,
-          _kf_Household: newFarmer._kf_Household,
-          _kf_Location: newFarmer._kf_Location,
-          _kf_Supplier: newFarmer._kf_Supplier,
-          _kf_Station: newFarmer._kf_Station,
-          Year_Birth: newFarmer.Year_Birth,
-          Gender: newFarmer.Gender,
-          farmerid: newFarmer.farmerid,
-          Name: newFarmer.Name,
-          National_ID_t: newFarmer.National_ID_t,
-          Phone: newFarmer.Phone,
-          Position: newFarmer.Position,
-          CAFE_ID: newFarmer.CAFE_ID,
-          SAN_ID: newFarmer.SAN_ID,
-          UTZ_ID: newFarmer.UTZ_ID,
-          Marital_Status: newFarmer.Marital_Status,
-          Reading_Skills: newFarmer.Reading_Skills,
-          Math_Skills: newFarmer.Math_Skills,
-          created_at: newFarmer.created_at,
-          created_by: newFarmer.created_by,
-          registered_at: newFarmer.registered_at,
-          updated_at: newFarmer.updated_at,
-          type: newFarmer.type,
-          sync_farmers: newFarmer.sync_farmers,
-          uploaded: newFarmer.uploaded,
-          uploaded_at: getCurrentDate(),
-          Area_Small: newFarmer.Area_Small,
-          Area_Smallest: newFarmer.Area_Smallest,
-          Trees: newFarmer.Trees,
-          Trees_Producing: newFarmer.Trees_Producing,
-          number_of_plots_with_coffee: newFarmer.number_of_plots_with_coffee,
-          STP_Weight: newFarmer.STP_Weight,
-          education_level: newFarmer.education_level,
-          latitude: newFarmer.latitude,
-          longitude: newFarmer.longitude,
-          seasonal_goal: newFarmer.seasonal_goal,
-        };
-
-        tmpFarmerObj = {
-          id: newFarmerId,
-          farmerid,
-          recordid: newFarmerRecordid,
-          householdid: getHouseholdid(newFarmer._kf_Household, processed_hh),
-        };
-
-        farmerArray.push({ ...actualFarmerData, ...tmpFarmerObj });
-      }
-
-      const newFarmers = await farmers.bulkCreate(farmerArray);
-
-      if (!newFarmers)
-        return res.status(500).json({
-          status: "fail",
-          message: `inserting farmers failed`,
-        });
-
-      const newHouseholds = await households.bulkCreate(hhArray);
-
-      if (!newHouseholds)
-        return res.status(500).json({
-          status: "fail",
-          message: `inserting households failed`,
-        });
-
-      return res.status(200).json({
-        status: "success",
-        uploadedFarmers: farmerArray,
-        uploadedHH: hhArray,
-      });
-    } catch (error) {
-      console.log(error);
-      return res.status(500).json({ status: "fail", error });
-    }
-  }
-
   static async farmerSoftDelete(req, res) {
     try {
       const { farmersToDelete } = req.body;
@@ -956,6 +747,52 @@ class mobileSyncController {
         });
 
       res.status(200).json({
+        status: "success",
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ status: "fail", error });
+    }
+  }
+
+  static async submitFieldWeeklyReports(req, res) {
+    try {
+      const { reports } = req.body;
+
+      if (reports.length < 1) {
+        return res.status(400).json({
+          status: "fail",
+          message: `incomplete data`,
+        });
+      }
+
+      const lastRecord = await weekly_reports.findOne({
+        order: [["ID", "DESC"]],
+      });
+
+      let nextId;
+      if (lastRecord) {
+        nextId = lastRecord.ID + 1; // Increment the ID
+      } else {
+        nextId = 1; // Set initial ID if no records exist
+      }
+
+      let processedReports = [];
+
+      for (const report of reports) {
+        let tmpObj = { ...report, ...{ ID: nextId++ } };
+        let { id, ...filteredObj } = tmpObj;
+        processedReports.push(filteredObj);
+      }
+
+      const addedReports = await weekly_reports.bulkCreate(processedReports);
+
+      if (!addedReports)
+        return res
+          .status(500)
+          .json({ status: "fail", message: "could not store reports" });
+
+      return res.status(200).json({
         status: "success",
       });
     } catch (error) {
