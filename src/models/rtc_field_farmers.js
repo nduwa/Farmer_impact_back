@@ -63,6 +63,11 @@ const Field_farmer = sequelize.define("rtc_field_farmers", {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  status: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: "new",
+  },
   cell: {
     type: DataTypes.STRING,
     allowNull: false,

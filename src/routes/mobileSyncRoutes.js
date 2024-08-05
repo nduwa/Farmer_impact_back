@@ -93,4 +93,7 @@ mobileSyncRoutes.post(
   mobileSyncController.submitFieldWeeklyReports
 );
 
+mobileSyncRoutes.post("/farmer/trees", mobileSyncController.submitFarmerTrees);
+mobileSyncRoutes.post("/farmer/farms", mobileSyncController.submitFarms);
+
 export default mobileSyncRoutes;
