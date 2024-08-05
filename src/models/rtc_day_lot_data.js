@@ -92,7 +92,7 @@ const Day_lot = sequelize.define('day_lots_data',{
 
     },
     status:{
-        type: DataTypes.ENUM('0', '1'),
+        type: DataTypes.ENUM('0','1'),
         allowNull: false,
         defaultValue:0
     }

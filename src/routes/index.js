@@ -26,6 +26,7 @@ import translationsRouter from "./translationsRoute";
 import evaluationRouter from "./evaluationsRoute";
 import inspectionAnswersRoutes from "./inspectionAnswersRoute";
 import registrationRoutes from "./registrationsRoute";
+import bucketsRouter from "./bucketsRoute";
 
 const router = Router();
 router.use("/user", userRoutes);
@@ -57,5 +58,6 @@ router.use("/translations", translationsRouter);
 router.use("/evaluations", evaluationRouter);
 router.use("/answers", inspectionAnswersRoutes);
 router.use("/farmer_registrations", registrationRoutes);
+router.use("/buckets", bucketsRouter);
 
 export default router;
