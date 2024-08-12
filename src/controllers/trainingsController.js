@@ -5,8 +5,16 @@ import Training from "../models/rtc_training";
 class TrainingController {
   static async getAllTraining(req, res) {
     try {
-
-      const allTrainings = await Training.findAll();
+      const page = parseInt(req.query.page, 10) || 1;
+      const pageSize = parseInt(req.query.pageSize, 10) || 100;
+      const offset = (page - 1) * pageSize;
+      const limit = pageSize;
+      const { count, rows: allTrainings } =
+        await Training.findAndCountAll({
+          offset,
+          limit,
+        });
+      // const allTrainings = await Training.findAll();
       if (!allTrainings || allTrainings.length === 0) {
         return res.status(404).json({
           status: "fail",
@@ -17,6 +25,9 @@ class TrainingController {
         status: "success",
         message: "All trainings retrieved successfully",
         data: allTrainings,
+        totalItems: count,
+        totalPages: Math.ceil(count / pageSize),
+        currentPage: page,
       });
     } catch (error) {
       console.error("Error retrieving trainings:", error.message);

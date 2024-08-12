@@ -6,5 +6,6 @@ const FarmerRouter = express.Router();
 FarmerRouter.get("/recentFarmers", FarmerController.getRecentFarmers);
 FarmerRouter.put("/approve", FarmerController.approveFarmer);
 FarmerRouter.put("/pending", FarmerController.approveApprovedFarmer);
+FarmerRouter.post("/farmers", FarmerController.addApprovedFarmers);
 
 export default FarmerRouter;
