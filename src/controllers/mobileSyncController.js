@@ -16,6 +16,10 @@ import training_attendance_sheet from "../models/rtc_attendance_sheets";
 import farmer_group_assignment from "../models/rtc_farmer_group_assignment";
 import field_farmers from "../models/rtc_field_farmers";
 import weekly_reports from "../models/rtc_field_weekly_reports";
+import household_trees from "../models/rtc_household_trees";
+import Farm_coordinations from "../models/rtc_farm_coordinations";
+import Farm_coordinates from "../models/rtc_farm_coordinates";
+import farmerUpdates from "../models/tmp_farmer_updates";
 
 import { Op } from "sequelize";
 import { getCurrentDate } from "../helpers/getCurrentDate";
@@ -343,6 +347,12 @@ class mobileSyncController {
         processedTransactions
       );
 
+      if (!addedTransactions)
+        return res.status(500).json({
+          status: "fail",
+          message: "could not store to rtc_transactions",
+        });
+
       return res.status(200).json({
         status: "success",
       });
@@ -463,28 +473,18 @@ class mobileSyncController {
   static async submitTraining(req, res) {
     try {
       const {
-        id,
         created_at,
         training_course_id,
         __kf_farmer,
         __kf_group,
-        status,
         __kf_attendance,
         username,
         password,
         uuid,
-        uploaded_at,
         _kf_training,
         lo,
         la,
-        __kp_Course,
-        Duration,
-        ID_COURSE,
-        Name,
-        Name_rw,
-        Name_fr,
         filepath,
-        ID_GROUP,
         participants,
       } = req.body;
 
@@ -607,7 +607,7 @@ class mobileSyncController {
       let processedFarmers = [];
 
       for (const farmer of newFarmers) {
-        let tmpObj = { ...farmer, ...{ id: nextId++ } };
+        let tmpObj = { ...farmer, ...{ id: nextId++, status: "new" } };
         processedFarmers.push(tmpObj);
       }
 
@@ -627,38 +627,35 @@ class mobileSyncController {
     }
   }
 
-  static async farmerSoftDelete(req, res) {
+  static async farmerUpdateDetails(req, res) {
     try {
-      const { farmersToDelete } = req.body;
+      const farmersToUpdate = req.body;
       let processedData = [];
+      let processedIDs = [];
 
-      if (farmersToDelete.length < 1)
+      if (farmersToUpdate.length < 1)
         return res.status(400).json({
           status: "fail",
           message: `incomplete data`,
         });
 
-      for (const farmer of farmersToDelete) {
-        let tmpFarmer = await farmers.findOne({
-          where: { __kp_Farmer: farmer.__kp_Farmer },
-        });
-
-        if (!tmpFarmer)
-          return res.status(404).json({
-            status: "fail",
-            message: `Farmer ${farmer.Name} was not fully registered yet`,
-          });
-
-        await tmpFarmer.update({
-          type: "deleted",
-        });
-
-        processedData.push(farmer.__kp_Farmer);
+      for (const farmer of farmersToUpdate) {
+        const { id, ...farmerDetails } = farmer;
+        processedData.push(farmerDetails);
+        processedIDs.push(farmer.id);
       }
 
-      res.status(200).json({
+      const addedUpdates = await farmerUpdates.bulkCreate(processedData);
+
+      if (!addedUpdates)
+        return res.status(500).json({
+          status: "fail",
+          message: "could not store to tmp_farmer_updates",
+        });
+
+      return res.status(200).json({
         status: "success",
-        processedData,
+        processedData: processedIDs,
       });
     } catch (error) {
       console.log(error);
@@ -791,6 +788,173 @@ class mobileSyncController {
         return res
           .status(500)
           .json({ status: "fail", message: "could not store reports" });
+
+      return res.status(200).json({
+        status: "success",
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ status: "fail", error });
+    }
+  }
+
+  static async submitFarmerTrees(req, res) {
+    try {
+      const { trees } = req.body;
+
+      if (trees.length < 1) {
+        return res.status(400).json({
+          status: "fail",
+          message: `incomplete data`,
+        });
+      }
+
+      const lastRecord = await household_trees.findOne({
+        order: [["ID", "DESC"]],
+      });
+
+      let nextId;
+      if (lastRecord) {
+        nextId = lastRecord.ID + 1; // Increment the ID
+      } else {
+        nextId = 1; // Set initial ID if no records exist
+      }
+
+      let processedRecords = [];
+
+      for (const tree of trees) {
+        let tmpObj = { ...tree, ...{ ID: nextId++ } };
+        let { id, ...filteredObj } = tmpObj;
+        processedRecords.push(filteredObj);
+      }
+
+      const addedRecords = await household_trees.bulkCreate(processedRecords);
+
+      if (!addedRecords)
+        return res
+          .status(500)
+          .json({ status: "fail", message: "could not store tree details" });
+
+      return res.status(200).json({
+        status: "success",
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ status: "fail", error });
+    }
+  }
+
+  static async submitFarms(req, res) {
+    try {
+      const { farms } = req.body;
+
+      if (farms.length < 1) {
+        return res.status(400).json({
+          status: "fail",
+          message: `incomplete data`,
+        });
+      }
+
+      const lastRecord_coordinations = await Farm_coordinations.findOne({
+        order: [["id", "DESC"]],
+      });
+
+      const lastRecord_coordinates = await Farm_coordinates.findOne({
+        order: [["id", "DESC"]],
+      });
+
+      let nextId_coordinations = 1;
+      let nextId_coordinates = 1;
+      let coordinates = [];
+      let coordinations = [];
+
+      if (lastRecord_coordinations) {
+        nextId_coordinations = lastRecord_coordinations.id + 1; // Increment the id
+      }
+      if (lastRecord_coordinates) {
+        nextId_coordinates = lastRecord_coordinates.id + 1; // Increment the id
+      }
+
+      for (const record of farms) {
+        let {
+          created_by,
+          farmerid,
+          latitude,
+          longitude,
+          status,
+          uploaded_at,
+          cropNameId,
+          farm_unit_area,
+          soil_slope,
+          uuid,
+          _kf_Supplier,
+          _kf_Staff,
+          _kf_User,
+          user_code,
+          _kf_Station,
+          CW_Name,
+          farmer_name,
+          national_ID,
+          farmer_ID,
+          full_name,
+          farm_GPS,
+          created_at,
+        } = record;
+
+        let farmCoordinates = {
+          id: nextId_coordinates++,
+          created_at,
+          created_by: 0,
+          farmerid: farmer_ID,
+          latitude,
+          longitude,
+          status,
+          uploaded_at: getCurrentDate(),
+          cropNameId,
+          farm_unit_area,
+          soil_slope,
+          uuid,
+          username: created_by,
+        };
+
+        coordinates.push(farmCoordinates);
+
+        let farmCoordinations = {
+          id: nextId_coordinations++,
+          _kf_Supplier,
+          _kf_Staff,
+          _kf_User,
+          user_code,
+          _kf_Station,
+          CW_Name,
+          farmer_name,
+          national_ID,
+          farmer_ID,
+          full_name,
+          farm_GPS: `${latitude},${longitude}`,
+          created_at,
+        };
+
+        coordinations.push(farmCoordinations);
+      }
+
+      const addedCoordinates = await Farm_coordinates.bulkCreate(coordinates);
+
+      if (!addedCoordinates)
+        return res.status(500).json({
+          status: "fail",
+          message: "could not store to rtc_farm_coordinates",
+        });
+
+      const addedCoordinations = await Farm_coordinations.bulkCreate(
+        coordinations
+      );
+
+      if (!addedCoordinations)
+        return res.status(500).json({
+          status: "fail",
+          message: "could not store to rtc_farm_coordinations",
+        });
 
       return res.status(200).json({
         status: "success",

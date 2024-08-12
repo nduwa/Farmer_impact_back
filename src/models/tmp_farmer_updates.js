@@ -1,21 +1,21 @@
 const { DataTypes } = require("sequelize");
 import sequelize from "../database/connectDb";
 
-const Field_farmer = sequelize.define("rtc_field_farmers", {
+const farmerUpdates = sequelize.define("tmp_farmer_updates", {
   id: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
     primaryKey: true,
   },
-  _kf_Supplier: {
+  __kp_Farmer: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  _kf_Group: {
     type: DataTypes.STRING,
     allowNull: false,
   },
   _kf_Staff: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  _kf_User: {
     type: DataTypes.STRING,
     allowNull: false,
   },
@@ -27,7 +27,19 @@ const Field_farmer = sequelize.define("rtc_field_farmers", {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  Year_Birth: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  Gender: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
   CW_Name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  farmer_ID: {
     type: DataTypes.STRING,
     allowNull: false,
   },
@@ -35,19 +47,15 @@ const Field_farmer = sequelize.define("rtc_field_farmers", {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  Gender: {
+  national_ID: {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  Year_Birth: {
+  Phone: {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  phone: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  National_ID: {
+  Position: {
     type: DataTypes.STRING,
     allowNull: false,
   },
@@ -55,40 +63,7 @@ const Field_farmer = sequelize.define("rtc_field_farmers", {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  Group_ID: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  village: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  status: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    defaultValue: "new",
-  },
-  cell: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  sector: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  Trees: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  Trees_Producing: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  number_of_plots: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  Skills: {
+  Reading_Skills: {
     type: DataTypes.STRING,
     allowNull: false,
   },
@@ -100,6 +75,30 @@ const Field_farmer = sequelize.define("rtc_field_farmers", {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  cell: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  village: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  Trees: {
+    type: DataTypes.DOUBLE,
+    allowNull: false,
+  },
+  Trees_Producing: {
+    type: DataTypes.DOUBLE,
+    allowNull: false,
+  },
+  number_of_plots_with_coffee: {
+    type: DataTypes.DOUBLE,
+    allowNull: false,
+  },
+  status: {
+    type: DataTypes.ENUM("update", "delete", "approved"),
+    allowNull: false,
+  },
   created_at: {
     type: DataTypes.DATE,
     defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
@@ -109,11 +108,5 @@ const Field_farmer = sequelize.define("rtc_field_farmers", {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  farm_GPS: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
 });
-
-module.exports = Field_farmer;
-sequelize.sync();
+module.exports = farmerUpdates;
