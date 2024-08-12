@@ -19,6 +19,7 @@ import weekly_reports from "../models/rtc_field_weekly_reports";
 import household_trees from "../models/rtc_household_trees";
 import Farm_coordinations from "../models/rtc_farm_coordinations";
 import Farm_coordinates from "../models/rtc_farm_coordinates";
+import farmerUpdates from "../models/tmp_farmer_updates";
 
 import { Op } from "sequelize";
 import { getCurrentDate } from "../helpers/getCurrentDate";
@@ -346,6 +347,12 @@ class mobileSyncController {
         processedTransactions
       );
 
+      if (!addedTransactions)
+        return res.status(500).json({
+          status: "fail",
+          message: "could not store to rtc_transactions",
+        });
+
       return res.status(200).json({
         status: "success",
       });
@@ -466,28 +473,18 @@ class mobileSyncController {
   static async submitTraining(req, res) {
     try {
       const {
-        id,
         created_at,
         training_course_id,
         __kf_farmer,
         __kf_group,
-        status,
         __kf_attendance,
         username,
         password,
         uuid,
-        uploaded_at,
         _kf_training,
         lo,
         la,
-        __kp_Course,
-        Duration,
-        ID_COURSE,
-        Name,
-        Name_rw,
-        Name_fr,
         filepath,
-        ID_GROUP,
         participants,
       } = req.body;
 
@@ -630,38 +627,35 @@ class mobileSyncController {
     }
   }
 
-  static async farmerSoftDelete(req, res) {
+  static async farmerUpdateDetails(req, res) {
     try {
-      const { farmersToDelete } = req.body;
+      const farmersToUpdate = req.body;
       let processedData = [];
+      let processedIDs = [];
 
-      if (farmersToDelete.length < 1)
+      if (farmersToUpdate.length < 1)
         return res.status(400).json({
           status: "fail",
           message: `incomplete data`,
         });
 
-      for (const farmer of farmersToDelete) {
-        let tmpFarmer = await farmers.findOne({
-          where: { __kp_Farmer: farmer.__kp_Farmer },
-        });
-
-        if (!tmpFarmer)
-          return res.status(404).json({
-            status: "fail",
-            message: `Farmer ${farmer.Name} was not fully registered yet`,
-          });
-
-        await tmpFarmer.update({
-          type: "deleted",
-        });
-
-        processedData.push(farmer.__kp_Farmer);
+      for (const farmer of farmersToUpdate) {
+        const { id, ...farmerDetails } = farmer;
+        processedData.push(farmerDetails);
+        processedIDs.push(farmer.id);
       }
 
-      res.status(200).json({
+      const addedUpdates = await farmerUpdates.bulkCreate(processedData);
+
+      if (!addedUpdates)
+        return res.status(500).json({
+          status: "fail",
+          message: "could not store to tmp_farmer_updates",
+        });
+
+      return res.status(200).json({
         status: "success",
-        processedData,
+        processedData: processedIDs,
       });
     } catch (error) {
       console.log(error);
