@@ -9,9 +9,20 @@ const { Op } = require('sequelize');
 class InspectionsController {
   static async getAllUserInspections(req, res) {
     try {
+      const { from, to } = req.query;
       const currentYear = new Date().getFullYear();
-      const startDate = new Date(currentYear - 1, 6, 1); // July of last year
-      const endDate = new Date(currentYear, 7, 31); // August of this year
+      const defaultStartDate = new Date(currentYear - 1, 6, 1); // July of last year
+      const defaultEndDate = new Date(currentYear, 7, 31); // August of this year
+      const startDate = from ? new Date(from) : defaultStartDate;
+      const endDate = to ? new Date(to) : defaultEndDate;
+
+      if (startDate > endDate) {
+        return res.status(400).json({
+          status: "fail",
+          message: "'from' date should be earlier than 'to' date",
+        });
+      }
+  
       const allInspections = await Inspection.findAll({
         where: {
           created_at: {
@@ -19,20 +30,21 @@ class InspectionsController {
           }
         }
       });
-      
-      if (!allInspections) {
+  
+      if (!allInspections || allInspections.length === 0) {
         return res.status(404).json({
           status: "fail",
-          message: "No inspections found",
+          message: "No inspections found in the given date range",
         });
       }
+  
       return res.status(200).json({
         status: "success",
-        message: "All inspections retrieved successfully !!!",
+        message: "Inspections retrieved successfully",
         data: allInspections,
       });
     } catch (error) {
-      console.log("yuhuu", error)
+      console.error("Error fetching inspections:", error);
       return res.status(500).json({
         status: "error",
         message: "Internal server error",

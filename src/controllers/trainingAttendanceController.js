@@ -7,12 +7,21 @@ class TrainingAttendanceController {
     try {
       const page = parseInt(req.query.page, 10) || 1;
       const pageSize = parseInt(req.query.pageSize, 10) || 100;
-
       const offset = (page - 1) * pageSize;
       const limit = pageSize;
+      const { from, to } = req.query;
       const currentYear = new Date().getFullYear();
-      const startDate = new Date(currentYear - 1, 6, 1); // July of last year
-      const endDate = new Date(currentYear, 7, 31); // August of this year
+      const defaultStartDate = new Date(currentYear - 1, 6, 1); // July of last year
+      const defaultEndDate = new Date(currentYear, 7, 31); // August of this year
+      const startDate = from ? new Date(from) : defaultStartDate;
+      const endDate = to ? new Date(to) : defaultEndDate;
+
+      if (startDate > endDate) {
+        return res.status(400).json({
+          status: "fail",
+          message: "'from' date should be earlier than 'to' date",
+        });
+      }
 
       const { count, rows: allAttendance } =
         await Training_attendance.findAndCountAll({

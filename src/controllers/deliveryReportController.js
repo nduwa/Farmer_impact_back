@@ -30,8 +30,7 @@ class deliveryReportController {
       }
 
       const maximumId = await Delivery_reports.max("id");
-      const maxId = maximumId || 0;
-
+      const maxId = maximumId + 1 || 0;
       new_delivery_report = await Delivery_reports.create({
         created_at: now,
         created_by: UserID,
@@ -78,7 +77,6 @@ class deliveryReportController {
           return transaction ? transaction.id : 0;
         })
       );
-      console.log("reports lots", reportsLots);
 
       const reportsLotsToCreate = reportsLots.map((report, index) => ({
         created_by: UserID,
