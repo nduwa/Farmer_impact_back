@@ -6,7 +6,6 @@ class RegistrationsController {
     try {
       const page = parseInt(req.query.page, 10) || 1;
       const pageSize = parseInt(req.query.pageSize, 10) || 100;
-
       const offset = (page - 1) * pageSize;
       const limit = pageSize;
       const { count, rows: RegistrationData } =
@@ -14,7 +13,6 @@ class RegistrationsController {
           offset,
           limit,
         });
-
       if (!RegistrationData || RegistrationData.length === 0) {
         return res.status(404).json({
           status: "Failed",
@@ -133,7 +131,6 @@ class RegistrationsController {
       }
 
       const updatedFarmers = [];
-
       for (const registration of allRegistrations) {
         const farmer = await Farmers.findOne({
           where: {
@@ -142,26 +139,32 @@ class RegistrationsController {
         });
 
         if (farmer) {
-          farmer._kf_Group = registration?.kf_group_new;
-          farmer._kf_Supplier = registration?._kf_Supplier;
-          farmer._kf_Station = registration?._kf_station;
-          await farmer.save();
+          await Farmers.update(
+            {
+              _kf_Group: registration.kf_group_new,
+              _kf_Supplier: registration._kf_Supplier,
+              _kf_Station: registration._kf_station,
+            },
+            {
+              where: { __kp_Farmer: farmer.__kp_Farmer },
+            }
+          );
+
           updatedFarmers.push(farmer);
-
-          // Change the registration status to deleted  4CC7AE0E-EF8F-4FE8-B165-5C1AA7CA9DF0
-
-          registration.status = "deleted";
-          await registration.save();
         }
-      }
 
+        await GroupAssignment.update(
+          { status: "deleted" },
+          { where: { id: registration.id } }
+        );
+      }
       return res.status(200).json({
         status: "success",
-        message: "Farmers updated successfully!",
+        message: "Farmers and registrations updated successfully!",
         data: updatedFarmers,
       });
     } catch (error) {
-      console.log("hehehe", error);
+      console.error("Error:", error);
       return res.status(500).json({
         status: "fail",
         error: error.message,

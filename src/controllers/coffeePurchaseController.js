@@ -4,7 +4,6 @@ import Season from "../models/rtc_seasons";
 import Day_lot from "../models/rtc_day_lot_data";
 import Bucket from "../models/bucketing";
 import Dry from "../models/rtc_drying";
-// import { generateRandomString } from "../helpers/randomStringGenerator";
 import generateUUID from "../helpers/randomStringGenerator";
 import Lock_cherries from "../models/rtc_lock_cherry_lot";
 class CoffeePurchaseController {

@@ -40,7 +40,8 @@
     "mysql2": "^3.10.3",
     "nodemailer": "^6.9.14",
     "rimraf": "^5.0.7",
-    "sequelize": "^6.36.0"
+    "sequelize": "^6.36.0",
+    "uuidv4": "^6.2.13"
   },
   "devDependencies": {
     "nodemon": "^3.0.3",
