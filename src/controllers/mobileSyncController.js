@@ -90,29 +90,42 @@ class mobileSyncController {
     try {
       let allStations = [];
 
-      const { userId } = req.params;
+      const { userId, all = 0 } = req.params;
 
-      const staffData = await staff.findOne({
-        where: { _kf_User: userId },
-      });
+      if (all == 1) {
+        const stationsForAudit = await stations.findAll();
 
-      if (!staffData || staffData.length === 0) {
-        return res
-          .status(404)
-          .json({ status: "fail", message: "staff user not found" });
+        if (!stationsForAudit) {
+          return res
+            .status(404)
+            .json({ status: "fail", message: "No stations found" });
+        }
+
+        allStations = [...stationsForAudit];
+      } else {
+        const staffData = await staff.findOne({
+          where: { _kf_User: userId },
+        });
+
+        if (!staffData || staffData.length === 0) {
+          return res
+            .status(404)
+            .json({ status: "fail", message: "staff user not found" });
+        }
+
+        const userStation = await stations.findOne({
+          where: { __kp_Station: staffData._kf_Station },
+        });
+
+        if (!userStation || userStation.length === 0) {
+          return res
+            .status(404)
+            .json({ status: "fail", message: "No station found" });
+        }
+
+        allStations.push(userStation);
       }
 
-      const userStation = await stations.findOne({
-        where: { __kp_Station: staffData._kf_Station },
-      });
-
-      if (!userStation || userStation.length === 0) {
-        return res
-          .status(404)
-          .json({ status: "fail", message: "No station found" });
-      }
-
-      allStations.push(userStation);
       return res
         .status(200)
         .json({ status: "success", table: "rtc_stations", data: allStations });
