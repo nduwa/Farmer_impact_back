@@ -17,7 +17,7 @@ class AddUntraceableCoffeeController {
       const randomDigits = generateRandomDigits(4);
 
       const staff = req?.user?.staff;
-      console.log("stafff", staff);
+    
       const lot_number = `FTR${year}${day}${month}${staff?.userID}${randomDigits}`;
       const site_day_lot = `SCJ${staff?.userID}${year}${day}${month}`;
       const day_lot_number = `${year}${day}${month}`;

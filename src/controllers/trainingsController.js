@@ -1,7 +1,4 @@
 import Training from "../models/rtc_training";
-
-
-
 class TrainingController {
   static async getAllTraining(req, res) {
     try {

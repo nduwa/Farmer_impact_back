@@ -305,7 +305,7 @@ class CoffeePurchaseController {
     try {
       const journalId = req.params.journalId;
       console.log("site", journalId);
-      const _kp_Log = generateUUID(32);
+      const _kp_Log = generateUUID();
       const seasonData = await Season.findOne({
         attributes: ["__kp_Season"],
         order: [["id", "DESC"]],

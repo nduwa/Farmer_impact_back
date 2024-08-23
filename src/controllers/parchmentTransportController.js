@@ -84,7 +84,7 @@ class ParchmentTransportController {
         },
       });
       let weightLeft;
-      let totalExistingWeight = 0; // Initialize totalExistingWeight to 0
+      let totalExistingWeight = 0; 
 
       if (
         Array.isArray(existingDeliveryReport) &&
@@ -317,6 +317,9 @@ class ParchmentTransportController {
   //get delivery repots
   static async getDeliveryReports(req, res) {
     try {
+      let whereCondition = {};
+      const Role = req.user?.staff?.Role;
+    
       const allDeliveryReports = await Delivery_reports.findAll();
       if (!allDeliveryReports) {
         return res.status(404).json({
