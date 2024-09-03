@@ -7,7 +7,7 @@ module.exports = {
     password: process.env.DB_PASSWORD,
     database: process.env.DEV_DATABASE,
     host: process.env.DB_HOST,
-    url:"mysql://root:@localhost:3306/farmerim_rtc",
+    url:`mysql://root:@localhost:3306/${process.env.DEV_DATABASE}`,
     dialect: 'mysql',
     dialectModule: require('mysql2'),
     logging: false
