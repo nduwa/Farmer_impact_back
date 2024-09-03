@@ -8,11 +8,15 @@ class RegistrationsController {
       const pageSize = parseInt(req.query.pageSize, 10) || 100;
       const offset = (page - 1) * pageSize;
       const limit = pageSize;
-      const { count, rows: RegistrationData } =
-        await GroupAssignment.findAndCountAll({
-          offset,
-          limit,
-        });
+      const kp_station = req.user?.staff?._kf_Station;
+  
+      const { count, rows: RegistrationData } = await GroupAssignment.findAndCountAll({
+        where: {
+          _kf_station: kp_station, // Filter where kf_station equals kp_station
+        },
+        offset,
+        limit,
+      });
       if (!RegistrationData || RegistrationData.length === 0) {
         return res.status(404).json({
           status: "Failed",

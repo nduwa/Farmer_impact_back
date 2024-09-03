@@ -12,6 +12,11 @@ const Drying = sequelize.define('drying',{
         defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
         allowNull:false
     },
+    created_by:{
+        type: DataTypes.INTEGER,
+        allowNull:false
+    },
+    
     certification:{
         type: DataTypes.STRING,
         allowNull: false

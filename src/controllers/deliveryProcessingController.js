@@ -91,7 +91,12 @@ class DeliveryProcesingController {
 
   static async getProcessedContributions(req, res) {
     try {
-      const processedContributions = await Temp_contribution.findAll();
+      const kp_station = req.user?.staff?._kf_Station;
+      const processedContributions = await Temp_contribution.findAll({
+        where: {
+          station: kp_station, // Filtering farmers by matching station
+        },
+      });
       if (!processedContributions || processedContributions.length === 0) {
         return res.status(404).json({
           status: "success",

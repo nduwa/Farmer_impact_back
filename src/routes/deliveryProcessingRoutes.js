@@ -1,5 +1,6 @@
 import express from "express";
 import DeliveryProcesingController from "../controllers/deliveryProcessingController";
+import verifyToken from "../middlewares/auth";
 const deliveryProcessingRouter = express.Router();
 
 deliveryProcessingRouter.get(
@@ -11,7 +12,7 @@ deliveryProcessingRouter.get(
   DeliveryProcesingController.getProcessedContributionById
 );
 deliveryProcessingRouter.get(
-  "/contributions/",
+  "/contributions/",verifyToken,
   DeliveryProcesingController.getProcessedContributions
 );
 deliveryProcessingRouter.post(
