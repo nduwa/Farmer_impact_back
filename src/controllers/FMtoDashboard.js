@@ -1,50 +1,61 @@
 import axios from 'axios';
 import axiosRetry from 'axios-retry';
-import transporter from '../database/mailConfig'; // Import nodemailer transporter
-import mailOptions from '../database/mailOption'; // Import mail options
+import transporter from '../database/mailConfig'; 
+import mailOptions from '../database/mailOption'; 
+import PriceTrends from '../models/rtc_price_trends';
+import Season from '../models/rtc_seasons';
+import User from '../models/rtc_users';
 import Staff from '../models/rtc_staff';
-import Users from '../models/rtc_users';
 import Supplier from '../models/rtc_supplier';
 import Station from '../models/rtc_station';
-import Readings from '../models/rtc_readings';
+import Reading from '../models/rtc_readings'; 
 
 class FMtoDashboard {
 
-    static apiUrl = 'https://dashboard-api.farmerimpact.co.rw'; // Define the API URL
+    static apiUrl = 'https://dashboard-api.farmerimpact.co.rw'; 
 
     // Configure axios to retry failed requests
     static configureAxiosRetry() {
         axiosRetry(axios, {
-            retries: 5, // Increase number of retries
-            retryDelay: retryCount => Math.min(retryCount * 1000, 5000), // Exponential backoff
+            retries: 5, 
+            retryDelay: retryCount => Math.min(retryCount * 1000, 5000), 
             retryCondition: error => axiosRetry.isNetworkOrIdempotentRequestError(error),
         });
     }
 
-    // Fetch data from API and update database
+    // Fetch all data and push to the database
     static async GetAllFMData(req, res) {
         try {
             FMtoDashboard.configureAxiosRetry();
 
-            const staffResult = await FMtoDashboard.getAllAndPushStaff();
-            const userResult = await FMtoDashboard.getAllAndPushUser();
-            const supplierResult = await FMtoDashboard.getAllAndPushSupplier();
-            const stationResult = await FMtoDashboard.getAllAndPushStation();
-            const readingResult = await FMtoDashboard.getAllAndPushReading();
+            const [priceTrendsResult, seasonResult, userResult, staffResult, supplierResult, stationResult, readingResult] = await Promise.all([
+                FMtoDashboard.getAllAndPushData('price_trends', PriceTrends, '__kp_Approval', 'z_recModifyTimestamp'),
+                FMtoDashboard.getAllAndPushData('season', Season, '__kp_Season', 'z_recModifyTimestamp'),
+                FMtoDashboard.getAllAndPushData('users', User, '__kp_User', 'last_update_at'),
+                FMtoDashboard.getAllAndPushData('staff', Staff, '__kp_Staff', 'last_update_at'),
+                FMtoDashboard.getAllAndPushData('supplier', Supplier, '__kp_Supplier', 'z_recModifyTimestamp'),
+                FMtoDashboard.getAllAndPushData('station', Station, '__kp_Station', 'updated_at'),
+                FMtoDashboard.getAllAndPushData('readings', Reading, '__kp_Reading', 'modified_at') 
+            ]);
 
-            const successMessages = [ 
-                ...supplierResult.successMessages, 
-                ...stationResult.successMessages, 
-                ...readingResult.successMessages,
+            const successMessages = [
+                ...priceTrendsResult.successMessages,
+                ...seasonResult.successMessages,
+                ...userResult.successMessages,
                 ...staffResult.successMessages,
-                ...userResult.successMessages
+                ...supplierResult.successMessages,
+                ...stationResult.successMessages,
+                ...readingResult.successMessages 
             ];
+
             const failureMessages = [
-                ...supplierResult.failureMessages, 
-                ...stationResult.failureMessages, 
-                ...readingResult.failureMessages,
+                ...priceTrendsResult.failureMessages,
+                ...seasonResult.failureMessages,
+                ...userResult.failureMessages,
                 ...staffResult.failureMessages,
-                ...userResult.failureMessages
+                ...supplierResult.failureMessages,
+                ...stationResult.failureMessages,
+                ...readingResult.failureMessages 
             ];
 
             let overallMessage = successMessages.length > 0
@@ -58,28 +69,32 @@ class FMtoDashboard {
             // Prepare the JSON-like structure for the email message
             const emailMessage = JSON.stringify({
                 success: successMessages.length > 0,
-                message: overallMessage,
                 changes: {
+                    priceTrendsChanges: priceTrendsResult.changes,
+                    seasonChanges: seasonResult.changes,
+                    userChanges: userResult.changes,
+                    staffChanges: staffResult.changes,
                     supplierChanges: supplierResult.changes,
                     stationChanges: stationResult.changes,
-                    readingChanges: readingResult.changes,
-                    staffChanges: staffResult.changes,
-                    userChanges: userResult.changes
-                }
-            }, null, 4); // 'null, 4' formats the JSON for readability with 4-space indentation
+                    readingChanges: readingResult.changes 
+                },
+                message: overallMessage
+            }, null, 4); 
 
-            await FMtoDashboard.sendEmailNotification(emailMessage);
+            await FMtoDashboard.sendEmailNotification(emailMessage); 
 
             res.status(200).json({
                 success: successMessages.length > 0,
-                message: overallMessage,
                 changes: {
+                    priceTrendsChanges: priceTrendsResult.changes,
+                    seasonChanges: seasonResult.changes,
+                    userChanges: userResult.changes,
+                    staffChanges: staffResult.changes,
                     supplierChanges: supplierResult.changes,
                     stationChanges: stationResult.changes,
-                    readingChanges: readingResult.changes,
-                    staffChanges: staffResult.changes,
-                    userChanges: userResult.changes
-                }
+                    readingChanges: readingResult.changes 
+                },
+                message: overallMessage
             });
 
         } catch (error) {
@@ -90,17 +105,19 @@ class FMtoDashboard {
             // Prepare and send email notification with error message
             const emailMessage = JSON.stringify({
                 success: false,
-                message: errorMessage,
                 changes: {
+                    priceTrendsChanges: { updated: 0, inserted: 0 },
+                    seasonChanges: { updated: 0, inserted: 0 },
+                    userChanges: { updated: 0, inserted: 0 },
+                    staffChanges: { updated: 0, inserted: 0 },
                     supplierChanges: { updated: 0, inserted: 0 },
                     stationChanges: { updated: 0, inserted: 0 },
-                    readingChanges: { updated: 0, inserted: 0 },
-                    staffChanges: { updated: 0, inserted: 0 },
-                    userChanges: { updated: 0, inserted: 0 }
-                }
-            }, null, 4); // 'null, 4' formats the JSON for readability with 4-space indentation
+                    readingChanges: { updated: 0, inserted: 0 } 
+                },
+                message: errorMessage
+            }, null, 4); 
 
-            await FMtoDashboard.sendEmailNotification(emailMessage);
+            await FMtoDashboard.sendEmailNotification(emailMessage); 
 
             res.status(500).json({
                 success: false,
@@ -109,401 +126,105 @@ class FMtoDashboard {
         }
     }
 
-    // Fetch user data from API and update the database
-    static async getAllAndPushUser() {
-        let allUsers = [];
+    // Fetch and process data from API
+    static async getAllAndPushData(endpoint, model, primaryKey, timestampField) {
+        let allData = [];
         let currentPage = 1;
+        const failureMessages = [];
+        const successMessages = [];
+        let updatedCount = 0;
+        let insertedCount = 0;
+        let duplicateCount = 0; 
+
+        // Handle single timestamp field
+        const getTimestamp = (item) => new Date(item[timestampField]).getTime();
 
         try {
             while (true) {
                 try {
-                    const response = await axios.get(`${FMtoDashboard.apiUrl}/users?page=${currentPage}`, { timeout: 30000 });
-                    const users = response.data?.Users || [];
+                    const response = await axios.get(`${FMtoDashboard.apiUrl}/${endpoint}?page=${currentPage}`, {
+                        timeout: 60000 // Increase timeout to 60 seconds
+                    });
 
-                    if (users.length === 0) break;
+                    if (!response || !response.data || !response.data.response || !response.data.response.data) {
+                        console.error(`Error fetching ${endpoint} data from page ${currentPage}: Response data structure is unexpected`);
+                        break;
+                    }
 
-                    allUsers.push(...users);
+                    const data = response.data.response.data || []; // Access the correct path to data
+
+                    if (data.length === 0) break;
+
+                    // Extract fieldData from each record
+                    const extractedData = data.map(record => record.fieldData);
+
+                    allData.push(...extractedData);
                     currentPage++;
                 } catch (error) {
-                    console.error(`Error fetching user data from page ${currentPage}: ${error.message}`);
+                    console.error(`Error fetching ${endpoint} data from page ${currentPage}: ${error.message}`);
                     break; // Optionally break the loop if persistent errors occur
                 }
             }
 
-            if (allUsers.length === 0) {
-                return { changes: { updated: 0, inserted: 0 }, successMessages: [], failureMessages: ['No user data found from API.'] };
+            if (allData.length === 0) {
+                return {
+                    changes: { updated: 0, inserted: 0, duplicated: 0 },
+                    successMessages: [],
+                    failureMessages: [`No ${endpoint} data found from API.`]
+                };
             }
 
             // Remove duplicates within the fetched data
-            const uniqueUserMap = new Map();
-            allUsers.forEach(user => {
-                if (!uniqueUserMap.has(user.__kp_User) || new Date(user.created_at) > new Date(uniqueUserMap.get(user.__kp_User).created_at)) {
-                    uniqueUserMap.set(user.__kp_User, user);
+            const uniqueDataMap = new Map();
+            allData.forEach(item => {
+                const existingItem = uniqueDataMap.get(item[primaryKey]);
+                if (!existingItem || getTimestamp(item) > getTimestamp(existingItem)) {
+                    uniqueDataMap.set(item[primaryKey], item);
+                } else {
+                    duplicateCount++; 
                 }
             });
 
-            const uniqueUsers = Array.from(uniqueUserMap.values());
+            const uniqueData = Array.from(uniqueDataMap.values());
 
-            // Fetch existing users from the database
-            const existingUsers = await Users.findAll({ attributes: ['__kp_User', 'created_at', 'last_update_at'] });
-            const existingUserMap = new Map();
+            // Fetch existing data from the database
+            const existingData = await model.findAll({ attributes: [primaryKey, timestampField] });
+            const existingDataMap = new Map(existingData.map(record => [record[primaryKey], getTimestamp(record)]));
 
-            existingUsers.forEach(user => {
-                if (!existingUserMap.has(user.__kp_User) || new Date(user.created_at) > new Date(existingUserMap.get(user.__kp_User).created_at)) {
-                    existingUserMap.set(user.__kp_User, user);
-                }
-            });
-
-            let updatedCount = 0;
-            let insertedCount = 0;
-            const failureMessages = [];
-            const duplicateRemovalMessages = [];
-
-            await Promise.all(uniqueUsers.map(async (user) => {
+            await Promise.all(uniqueData.map(async (item) => {
                 try {
-                    const existingRecord = existingUserMap.get(user.__kp_User);
-                    const apiTimestamp = new Date(user.last_update_at);
+                    const existingTimestamp = existingDataMap.get(item[primaryKey]);
+                    const apiTimestamp = getTimestamp(item);
 
-                    if (existingRecord) {
-                        const existingDate = new Date(existingRecord.last_update_at);
-                        if (apiTimestamp > existingDate) {
-                            await Users.update(user, { where: { __kp_User: user.__kp_User } });
+                    if (existingTimestamp) {
+                        if (apiTimestamp > existingTimestamp) {
+                            await model.update(item, { where: { [primaryKey]: item[primaryKey] } });
                             updatedCount++;
                         }
-
-                        // Remove older duplicates if needed
-                        if (new Date(user.created_at) > new Date(existingRecord.created_at)) {
-                            await Users.destroy({ where: { __kp_User: user.__kp_User, created_at: existingRecord.created_at } });
-                            duplicateRemovalMessages.push(`Removed older duplicate for user ${user.__kp_User}`);
-                        }
-
                     } else {
-                        await Users.create(user);
+                        await model.create(item);
                         insertedCount++;
                     }
                 } catch (error) {
-                    failureMessages.push(`Failed to process user ${user.__kp_User}: ${error.message}`);
+                    failureMessages.push(`Failed to process ${endpoint.slice(0, -1)} ${item[primaryKey]}: ${error.message}`);
                 }
             }));
 
             return {
-                changes: { updated: updatedCount, inserted: insertedCount },
+                changes: { updated: updatedCount, inserted: insertedCount, duplicated: duplicateCount },
                 successMessages: [
-                    `Updated ${updatedCount} user records`, 
-                    `Inserted ${insertedCount} user records`,
-                    ...duplicateRemovalMessages
+                    `Updated ${updatedCount} ${endpoint.slice(0, -1)} records`,
+                    `Inserted ${insertedCount} ${endpoint.slice(0, -1)} records`,
+                    `Removed ${duplicateCount} duplicate records` 
                 ].filter(msg => !msg.includes('0')),
                 failureMessages
             };
 
         } catch (error) {
             return {
-                changes: { updated: 0, inserted: 0 },
+                changes: { updated: 0, inserted: 0, duplicated: 0 },
                 successMessages: [],
-                failureMessages: [`Failed to fetch or insert user data: ${error.message}`]
-            };
-        }
-    }
-
-    // Fetch staff data from API and update the database
-    static async fetchDataWithRetry(url) {
-        try {
-            const response = await axios.get(url, { timeout: 60000 }); // Increased timeout
-            return response.data;
-        } catch (error) {
-            console.error(`Failed to fetch data from ${url}: ${error.message}`);
-            throw error; // Re-throw the error after logging
-        }
-    }
-
-    static async getAllAndPushStaff() {
-        let allStaff = [];
-        let currentPage = 1;
-
-        try {
-            FMtoDashboard.configureAxiosRetry();
-
-            while (true) {
-                try {
-                    const url = `${FMtoDashboard.apiUrl}/staff?page=${currentPage}`;
-                    const staffData = await FMtoDashboard.fetchDataWithRetry(url);
-                    const staff = staffData?.staff || [];
-
-                    if (staff.length === 0) break;
-
-                    allStaff.push(...staff);
-                    currentPage++;
-                } catch (error) {
-                    console.error(`Error fetching staff data from page ${currentPage}: ${error.message}`);
-                    break; // Optionally break the loop if persistent errors occur
-                }
-            }
-
-            if (allStaff.length === 0) {
-                return { changes: { updated: 0, inserted: 0 }, successMessages: [], failureMessages: ['No staff data found from API.'] };
-            }
-
-            // Remove duplicates within the fetched data
-            const uniqueStaffMap = new Map();
-            allStaff.forEach(staff => {
-                if (!uniqueStaffMap.has(staff.__kp_Staff) || new Date(staff.created_at) > new Date(uniqueStaffMap.get(staff.__kp_Staff).created_at)) {
-                    uniqueStaffMap.set(staff.__kp_Staff, staff);
-                }
-            });
-
-            const uniqueStaff = Array.from(uniqueStaffMap.values());
-
-            // Fetch existing staff from the database
-            const existingStaff = await Staff.findAll({ attributes: ['__kp_Staff', 'created_at', 'last_update_at'] });
-            const existingStaffMap = new Map();
-
-            existingStaff.forEach(staff => {
-                if (!existingStaffMap.has(staff.__kp_Staff) || new Date(staff.created_at) > new Date(existingStaffMap.get(staff.__kp_Staff).created_at)) {
-                    existingStaffMap.set(staff.__kp_Staff, staff);
-                }
-            });
-
-            let updatedCount = 0;
-            let insertedCount = 0;
-            const failureMessages = [];
-            const duplicateRemovalMessages = [];
-
-            await Promise.all(uniqueStaff.map(async (staff) => {
-                try {
-                    const existingRecord = existingStaffMap.get(staff.__kp_Staff);
-                    const apiTimestamp = new Date(staff.last_update_at);
-
-                    if (existingRecord) {
-                        const existingDate = new Date(existingRecord.last_update_at);
-                        if (apiTimestamp > existingDate) {
-                            await Staff.update(staff, { where: { __kp_Staff: staff.__kp_Staff } });
-                            updatedCount++;
-                        }
-
-                        // Remove older duplicates if needed
-                        if (new Date(staff.created_at) > new Date(existingRecord.created_at)) {
-                            await Staff.destroy({ where: { __kp_Staff: staff.__kp_Staff, created_at: existingRecord.created_at } });
-                            duplicateRemovalMessages.push(`Removed older duplicate for staff ${staff.__kp_Staff}`);
-                        }
-
-                    } else {
-                        await Staff.create(staff);
-                        insertedCount++;
-                    }
-                } catch (error) {
-                    failureMessages.push(`Failed to process staff ${staff.__kp_Staff}: ${error.message}`);
-                }
-            }));
-
-            return {
-                changes: { updated: updatedCount, inserted: insertedCount },
-                successMessages: [
-                    `Updated ${updatedCount} staff records`, 
-                    `Inserted ${insertedCount} staff records`,
-                    ...duplicateRemovalMessages
-                ].filter(msg => !msg.includes('0')),
-                failureMessages
-            };
-
-        } catch (error) {
-            return {
-                changes: { updated: 0, inserted: 0 },
-                successMessages: [],
-                failureMessages: [`Failed to fetch or insert staff data: ${error.message}`]
-            };
-        }
-    }
-    // Fetch suppliers data from API and update the database
-    static async getAllAndPushSupplier() {
-        let allSuppliers = [];
-        let currentPage = 1;
-
-        try {
-            while (true) {
-                const response = await axios.get(`${FMtoDashboard.apiUrl}/supplier?page=${currentPage}`, { timeout: 30000 });
-                const suppliers = response.data?.Suppliers || [];
-
-                if (suppliers.length === 0) break;
-
-                allSuppliers.push(...suppliers);
-                currentPage++;
-            }
-
-            if (allSuppliers.length === 0) {
-                return { changes: { updated: 0, inserted: 0 }, successMessages: [], failureMessages: ['No suppliers data found from API.'] };
-            }
-
-            const existingSuppliers = await Supplier.findAll({ attributes: ['__kp_Supplier', 'z_recModifyTimestamp'] });
-            const existingSupplierMap = new Map(existingSuppliers.map(supplier => [supplier.__kp_Supplier, supplier.z_recModifyTimestamp]));
-
-            let updatedCount = 0;
-            let insertedCount = 0;
-            const failureMessages = [];
-
-            await Promise.all(allSuppliers.map(async (supplier) => {
-                try {
-                    const existingTimestamp = existingSupplierMap.get(supplier.__kp_Supplier);
-                    const apiTimestamp = new Date(supplier.z_recModifyTimestamp);
-
-                    if (existingTimestamp) {
-                        const existingDate = new Date(existingTimestamp);
-                        if (apiTimestamp > existingDate) {
-                            await Supplier.update(supplier, { where: { __kp_Supplier: supplier.__kp_Supplier } });
-                            updatedCount++;
-                        }
-                    } else {
-                        await Supplier.create(supplier);
-                        insertedCount++;
-                    }
-                } catch (error) {
-                    failureMessages.push(`Failed to process supplier ${supplier.__kp_Supplier}: ${error.message}`);
-                }
-            }));
-
-            return {
-                changes: { updated: updatedCount, inserted: insertedCount },
-                successMessages: [`Updated ${updatedCount} suppliers`, `Inserted ${insertedCount} suppliers`].filter(msg => !msg.includes('0')),
-                failureMessages
-            };
-
-        } catch (error) {
-            return {
-                changes: { updated: 0, inserted: 0 },
-                successMessages: [],
-                failureMessages: [`Failed to fetch or insert suppliers data: ${error.message}`]
-            };
-        }
-    }
-
-    // Fetch stations data from API and update the database
-    static async getAllAndPushStation() {
-        let allStations = [];
-        let currentPage = 1;
-
-        try {
-            while (true) {
-                const response = await axios.get(`${FMtoDashboard.apiUrl}/station?page=${currentPage}`, { timeout: 30000 });
-                const stations = response.data?.Stations || [];
-
-                if (stations.length === 0) break;
-
-                allStations.push(...stations);
-                currentPage++;
-            }
-
-            if (allStations.length === 0) {
-                return { changes: { updated: 0, inserted: 0 }, successMessages: [], failureMessages: ['No stations data found from API.'] };
-            }
-
-            const existingStations = await Station.findAll({ attributes: ['__kp_Station', 'updated_at'] });
-            const existingStationMap = new Map(existingStations.map(station => [station.__kp_Station, station.updated_at]));
-
-            let updatedCount = 0;
-            let insertedCount = 0;
-            const failureMessages = [];
-
-            await Promise.all(allStations.map(async (station) => {
-                try {
-                    const existingTimestamp = existingStationMap.get(station.__kp_Station);
-                    const apiTimestamp = new Date(station.updated_at);
-
-                    if (existingTimestamp) {
-                        const existingDate = new Date(existingTimestamp);
-                        if (apiTimestamp > existingDate) {
-                            await Station.update(station, { where: { __kp_Station: station.__kp_Station } });
-                            updatedCount++;
-                        }
-                    } else {
-                        await Station.create(station);
-                        insertedCount++;
-                    }
-                } catch (error) {
-                    failureMessages.push(`Failed to process station ${station.__kp_Station}: ${error.message}`);
-                }
-            }));
-
-            return {
-                changes: { updated: updatedCount, inserted: insertedCount },
-                successMessages: [`Updated ${updatedCount} stations`, `Inserted ${insertedCount} stations`].filter(msg => !msg.includes('0')),
-                failureMessages
-            };
-
-        } catch (error) {
-            return {
-                changes: { updated: 0, inserted: 0 },
-                successMessages: [],
-                failureMessages: [`Failed to fetch or insert stations data: ${error.message}`]
-            };
-        }
-    }
-
-    // Fetch readings data from API and update the database
-    static async getAllAndPushReading() {
-        let allReadings = [];
-        let currentPage = 1;
-
-        try {
-            while (true) {
-                try {
-                    const response = await axios.get(`${FMtoDashboard.apiUrl}/readings?page=${currentPage}`, { timeout: 30000 });
-                    const readings = response.data?.Readings || [];
-
-                    if (readings.length === 0) break;
-
-                    allReadings.push(...readings);
-                    currentPage++;
-                } catch (error) {
-                    if (error.response && error.response.status === 404) {
-                        // Handle 404 specifically
-                        throw new Error('Readings API endpoint not found (404)');
-                    } else {
-                        throw error; // Re-throw other errors
-                    }
-                }
-            }
-
-            if (allReadings.length === 0) {
-                return { changes: { updated: 0, inserted: 0 }, successMessages: [], failureMessages: ['No readings data found from API.'] };
-            }
-
-            const existingReadings = await Readings.findAll({ attributes: ['__kp_Reading', 'modified_at'] });
-            const existingReadingMap = new Map(existingReadings.map(reading => [reading.__kp_Reading, reading.modified_at]));
-
-            let updatedCount = 0;
-            let insertedCount = 0;
-            const failureMessages = [];
-
-            await Promise.all(allReadings.map(async (reading) => {
-                try {
-                    const existingTimestamp = existingReadingMap.get(reading.__kp_Reading);
-                    const apiTimestamp = new Date(reading.modified_at);
-
-                    if (existingTimestamp) {
-                        const existingDate = new Date(existingTimestamp);
-                        if (apiTimestamp > existingDate) {
-                            await Readings.update(reading, { where: { __kp_Reading: reading.__kp_Reading } });
-                            updatedCount++;
-                        }
-                    } else {
-                        await Readings.create(reading);
-                        insertedCount++;
-                    }
-                } catch (error) {
-                    failureMessages.push(`Failed to process reading ${reading.__kp_Reading}: ${error.message}`);
-                }
-            }));
-
-            return {
-                changes: { updated: updatedCount, inserted: insertedCount },
-                successMessages: [`Updated ${updatedCount} readings`, `Inserted ${insertedCount} readings`].filter(msg => !msg.includes('0')),
-                failureMessages
-            };
-
-        } catch (error) {
-            return {
-                changes: { updated: 0, inserted: 0 },
-                successMessages: [],
-                failureMessages: [`Failed to fetch or insert readings data: ${error.message}`]
+                failureMessages: [`Failed to fetch or insert ${endpoint} data: ${error.message}`]
             };
         }
     }
@@ -518,7 +239,7 @@ class FMtoDashboard {
             mailOptions.text = formattedMessage;
 
             const info = await transporter.sendMail(mailOptions);
-            console.log('Email sent:', info.response);
+            console.log(`Email sent: ${info.response}`);
         } catch (error) {
             console.error('Error sending email:', error);
         }
