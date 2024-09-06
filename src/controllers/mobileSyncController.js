@@ -108,9 +108,25 @@ class mobileSyncController {
         });
 
         if (!staffData || staffData.length === 0) {
-          return res
-            .status(404)
-            .json({ status: "fail", message: "staff user not found" });
+          let stationAssignedId = userId;
+
+          let surveyorStation = await stations.findOne({
+            where: { __kp_Station: stationAssignedId }, // when it's census survey
+          });
+
+          if (!surveyorStation) {
+            return res
+              .status(404)
+              .json({ status: "fail", message: "staff user not found" });
+          } else {
+            allStations.push(surveyorStation);
+
+            return res.status(200).json({
+              status: "success",
+              table: "rtc_stations",
+              data: allStations,
+            });
+          }
         }
 
         const userStation = await stations.findOne({
