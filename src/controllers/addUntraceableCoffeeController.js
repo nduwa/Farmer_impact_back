@@ -23,7 +23,7 @@ class AddUntraceableCoffeeController {
       const day_lot_number = `${year}${day}${month}`;
       const cherry_lot_id = `${year}${staff?.userID}CH${day}${month}`;
       const parchment_lot_id = `${year}${staff?.userID}P${day}${month}F`;
-      const bad_cherry_lot_id = `${year}${staff?.userID}CH${day}${month}`;
+      const bad_cherry_lot_id = `${year}${staff?.userID}CH${day}${month}F`;
       const bad_parch_lot_id = `${year}${staff?.userID}CH${day}${month}F`;
       const wantedStation = await Station.findOne({
         where: {

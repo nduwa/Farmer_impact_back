@@ -585,6 +585,7 @@ class CoffeePurchaseController {
       if (!dry || dry.length === 0) {
         const saveDry = await Dry.create({
           created_at: Date.now(),
+          created_by:req.user?.user?.id,
           certification: cert,
           day_lot_number: day_lot,
           GradeA: grade_a,
