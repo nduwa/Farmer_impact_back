@@ -94,7 +94,7 @@ const Group = sequelize.define("rtc_groups", {
     allowNull: false,
   },
   active: {
-    type: DataTypes.ENUM("0", "1"),
+    type: DataTypes.ENUM("0","1"),
     defaultValue: "0",
   },
 });
