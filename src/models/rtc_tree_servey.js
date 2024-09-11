@@ -76,6 +76,10 @@ const Trees_Servey = sequelize.define('temp_household_trees',{
         type: DataTypes.DOUBLE,
         allowNull:false
     },
+    source_income:{
+        type: DataTypes.STRING,
+        allowNull: false
+    },
     Trees:{
         type: DataTypes.DOUBLE,
         allowNull: false
@@ -84,11 +88,15 @@ const Trees_Servey = sequelize.define('temp_household_trees',{
         type: DataTypes.DOUBLE,
         allowNull: false
     },
-    Trees_year_less_15:{
+    Trees_year_less_10:{
         type: DataTypes.DOUBLE,
         allowNull: false
     },
-    Trees_year_greater_15:{
+    Trees_year_10_20:{
+        type: DataTypes.DOUBLE,
+        allowNull: false
+    },
+    Trees_year_greater_20:{
         type: DataTypes.DOUBLE,
         allowNull: false
     },
@@ -96,7 +104,15 @@ const Trees_Servey = sequelize.define('temp_household_trees',{
         type: DataTypes.DOUBLE,
         allowNull: true,
     },
+    last_season:{
+        type: DataTypes.DOUBLE,
+        allowNull:false
+    },
     last_season_production:{
+        type: DataTypes.DOUBLE,
+        allowNull:false
+    },
+    current_season:{
         type: DataTypes.DOUBLE,
         allowNull:false
     },
@@ -160,7 +176,7 @@ const Trees_Servey = sequelize.define('temp_household_trees',{
         type: DataTypes.DOUBLE,
         allowNull:false
     },
-    rejuvenated_tree:{
+    rejuvenated_l_tree:{
         type: DataTypes.DOUBLE,
         allowNull:false
     },
@@ -168,7 +184,7 @@ const Trees_Servey = sequelize.define('temp_household_trees',{
         type: DataTypes.DOUBLE,
         allowNull:false
     },
-    rejuvenated_tree:{
+    rejuvenated_c_tree:{
         type: DataTypes.DOUBLE,
         allowNull:false
     },
