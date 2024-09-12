@@ -100,4 +100,9 @@ mobileSyncRoutes.post(
   mobileSyncController.farmerUpdateDetails
 );
 
+mobileSyncRoutes.post(
+  "/farmer/survey",
+  mobileSyncController.submitCensusSurvey
+);
+
 export default mobileSyncRoutes;
