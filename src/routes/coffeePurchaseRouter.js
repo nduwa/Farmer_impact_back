@@ -46,7 +46,7 @@ router.post(
   verifyToken,
   coffeePuchase.AddTransactionBucket
 );
-router.post('/bucketweight', coffeePuchase.TransactionBucketWeight)
+router.post('/bucketweight', verifyToken,coffeePuchase.TransactionBucketWeight)
 router.get('/dryweighting',coffeePuchase.getAllBucketWeighting)
 //router.put('/closeAndSubmit/:cherryLotId',coffeePuchase.CloseAndSubmitTransaction)
 
