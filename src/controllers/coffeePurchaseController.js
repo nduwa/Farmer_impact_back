@@ -717,10 +717,11 @@ class CoffeePurchaseController {
         // });
 
         console.log("save", saveDry.GradeA);
-        return res.status(200).json({ status: "success", data: saveDry });
+        return res.status(200).json({ status: "success", data: saveDry , message:"Bucket weight Added successfully !!!" });
       }
       const col = {
         created_at: Date.now(),
+        created_by:req.user?.user?.id,
         certification: cert,
         GradeA: grade_a,
         GradeB: grade_b,
