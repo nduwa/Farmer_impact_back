@@ -1,7 +1,7 @@
 const { DataTypes } = require("sequelize");
 import sequelize from "../database/connectDb";
 
-const Mobile_App = sequelize.define("rtc_mobile_app_access_control", {
+const Tree_details_Survey = sequelize.define("rtc_tree_details_survey", {
   id: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
@@ -12,33 +12,37 @@ const Mobile_App = sequelize.define("rtc_mobile_app_access_control", {
     defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
     allowNull: false,
   },
-  moduleid: {
+  __kp_tree_details: {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  userid: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  },
-  view_record: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  },
-  add_record: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  },
-  delete_record: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  },
-  edit_record: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  },
-  platform: {
+  _kf_trees_survey: {
     type: DataTypes.STRING,
+    allowNull: false,
+  },
+  est_production_kg: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  est_production_year: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  received_seedlings: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  received_seedlings_year: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  rejuvenated_seedlings: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  rejuvenated_seedlings_year: {
+    type: DataTypes.INTEGER,
     allowNull: false,
   },
 });
-module.exports = Mobile_App;
+module.exports = Tree_details_Survey;

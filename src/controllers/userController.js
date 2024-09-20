@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+import { Op, where } from "sequelize";
 import Users from "../models/rtc_users";
 import userValidationSchema from "../validations/userValidations";
 import loginValidationSchema from "../validations/loginValidation";
@@ -6,6 +6,7 @@ import bcrypt from "bcrypt";
 import User_Access from "../models/rtc_temp_user_access";
 import { generateRandomString } from "../helpers/randomStringGenerator";
 import Staff from "../models/rtc_staff";
+import Temporary_users from "../models/rtc_temp_users";
 import * as dotenv from "dotenv";
 import generateToken from "../helpers/generateToken";
 dotenv.config();
@@ -227,14 +228,56 @@ class UserController {
         });
       const appLogin = req.query.appLogin || 0;
 
-      const user = await Users.findOne({
+      let user = await Users.findOne({
         where: { Name_User: req.body.Name_User },
       });
       if (!user) {
-        return res.status(400).json({
-          status: "fail",
-          message: "Invalid username",
-        });
+        if (appLogin) {
+          let tmp_user = await Temporary_users.findOne({
+            where: { Name_User: req.body.Name_User, status: 1 },
+          });
+
+          if (!tmp_user) {
+            return res.status(400).json({
+              status: "fail",
+              message: "Invalid user",
+            });
+          }
+
+          let pwdValidity = await bcrypt.compare(
+            req.body.password,
+            tmp_user.password
+          );
+
+          if (!pwdValidity) {
+            return res.status(400).json({
+              status: "fail",
+              message: "Invalid password",
+            });
+          }
+
+          const fake_staff = {
+            id: tmp_user.user_id,
+            __kp_Staff: "",
+            _kf_Station: tmp_user._kf_station,
+            userID: tmp_user.user_id,
+            Role: tmp_user.role,
+            Name: tmp_user.Name_Full,
+          };
+
+          const token = generateToken(tmp_user, appLogin, fake_staff);
+
+          return res.status(200).json({
+            status: "success",
+            message: "User logged in successfully",
+            token: token,
+          });
+        } else {
+          return res.status(400).json({
+            status: "fail",
+            message: "Invalid username",
+          });
+        }
       }
 
       const validPassword = await bcrypt.compare(
@@ -278,6 +321,7 @@ class UserController {
         token: token,
       });
     } catch (err) {
+      console.log(err);
       res.status(500).json({
         status: "fail",
         message: err.message,

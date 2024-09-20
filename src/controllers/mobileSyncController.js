@@ -23,6 +23,7 @@ import farmerUpdates from "../models/tmp_farmer_updates";
 
 import { Op } from "sequelize";
 import { getCurrentDate } from "../helpers/getCurrentDate";
+import generateUUID from "../helpers/randomStringGenerator";
 
 class mobileSyncController {
   static async retrieveSupplier(req, res) {
@@ -108,9 +109,26 @@ class mobileSyncController {
         });
 
         if (!staffData || staffData.length === 0) {
-          return res
-            .status(404)
-            .json({ status: "fail", message: "staff user not found" });
+          let stationAssignedId = userId;
+
+          let surveyorStation = await stations.findOne({
+            where: { __kp_Station: stationAssignedId }, // when it's census survey
+          });
+
+          if (!surveyorStation) {
+            console.log(stationAssignedId);
+            return res
+              .status(404)
+              .json({ status: "fail", message: "station not found" });
+          } else {
+            allStations.push(surveyorStation);
+
+            return res.status(200).json({
+              status: "success",
+              table: "rtc_stations",
+              data: allStations,
+            });
+          }
         }
 
         const userStation = await stations.findOne({
@@ -425,11 +443,15 @@ class mobileSyncController {
 
       let processedResponses = [];
 
+      console.log(responses);
       let newid = lastResponseId.id;
       for (const resp of responses) {
         let tmpObj = {
           ...resp,
-          ...{ id: newid + 1, rtc_inspections_id: newInspection.id },
+          ...{
+            id: newid + 1,
+            rtc_inspections_id: newInspection.id,
+          },
         };
         newid++;
         processedResponses.push(tmpObj);
@@ -968,6 +990,50 @@ class mobileSyncController {
           status: "fail",
           message: "could not store to rtc_farm_coordinations",
         });
+
+      return res.status(200).json({
+        status: "success",
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ status: "fail", error });
+    }
+  }
+
+  static async submitCensusSurvey(req, res) {
+    try {
+      const survey = req.body;
+
+      if (survey.length < 1) {
+        return res.status(400).json({
+          status: "fail",
+          message: `incomplete data`,
+        });
+      }
+
+      console.log("hehe");
+
+      const {
+        observation_on_courses,
+        observation_on_diseases,
+        pests_and_diseases,
+        trees_survey,
+        trees_details,
+      } = survey;
+
+      // rtc_trees_survey
+      const treeSurveyObj = {
+        ...trees_survey,
+        updated_at: getCurrentDate(),
+      };
+
+      // rtc_tree_details_survey
+
+      // rtc_pests_diseases_survey
+
+      // rtc_observation_diseases_survey
+
+      // rtc_observation_courses_survey
 
       return res.status(200).json({
         status: "success",

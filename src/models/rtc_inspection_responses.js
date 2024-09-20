@@ -24,6 +24,10 @@ const Inspection_Response = sequelize.define("inspection_responses", {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  compliance_date: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
   deleted: {
     type: DataTypes.INTEGER,
     allowNull: false,
