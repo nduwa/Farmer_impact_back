@@ -116,9 +116,10 @@ class mobileSyncController {
           });
 
           if (!surveyorStation) {
+            console.log(stationAssignedId);
             return res
               .status(404)
-              .json({ status: "fail", message: "staff user not found" });
+              .json({ status: "fail", message: "station not found" });
           } else {
             allStations.push(surveyorStation);
 
@@ -442,11 +443,15 @@ class mobileSyncController {
 
       let processedResponses = [];
 
+      console.log(responses);
       let newid = lastResponseId.id;
       for (const resp of responses) {
         let tmpObj = {
           ...resp,
-          ...{ id: newid + 1, rtc_inspections_id: newInspection.id },
+          ...{
+            id: newid + 1,
+            rtc_inspections_id: newInspection.id,
+          },
         };
         newid++;
         processedResponses.push(tmpObj);
@@ -1006,7 +1011,7 @@ class mobileSyncController {
         });
       }
 
-      console.log(survey);
+      console.log("hehe");
 
       const {
         observation_on_courses,
