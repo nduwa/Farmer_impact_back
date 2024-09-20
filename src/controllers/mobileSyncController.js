@@ -20,6 +20,11 @@ import household_trees from "../models/rtc_household_trees";
 import Farm_coordinations from "../models/rtc_farm_coordinations";
 import Farm_coordinates from "../models/rtc_farm_coordinates";
 import farmerUpdates from "../models/tmp_farmer_updates";
+import treeSurvey from "../models/rtc_tree_survey";
+import treeDetailsSurvey from "../models/rtc_tree_details_survey";
+import pestsDiseasesSurvey from "../models/rtc_pests_diseases_survey";
+import observationCoursesSurvey from "../models/rtc_observation_courses_survey";
+import observationDiseasesSurvey from "../models/rtc_observation_diseases_survey";
 
 import { Op } from "sequelize";
 import { getCurrentDate } from "../helpers/getCurrentDate";
@@ -1014,26 +1019,64 @@ class mobileSyncController {
       console.log("hehe");
 
       const {
-        observation_on_courses,
-        observation_on_diseases,
-        pests_and_diseases,
-        trees_survey,
-        trees_details,
+        treeSurveyObj,
+        treeDetails,
+        pestsAndDiseases,
+        observationPests,
+        observationCourses,
       } = survey;
 
       // rtc_trees_survey
-      const treeSurveyObj = {
-        ...trees_survey,
-        updated_at: getCurrentDate(),
-      };
+      let { uploaded, ...cleanedTreeSurvey } = treeSurveyObj;
+
+      const addedSurvey = await treeSurvey.create(cleanedTreeSurvey);
+
+      if (!addedSurvey)
+        return res.status(500).json({
+          status: "fail",
+          message: "insert to rtc_trees_survey failed",
+        });
 
       // rtc_tree_details_survey
+      const addDetails = await treeDetailsSurvey.bulkCreate(treeDetails);
+
+      if (!addDetails)
+        return res.status(500).json({
+          status: "fail",
+          message: "insert to rtc_trees_details_survey failed",
+        });
 
       // rtc_pests_diseases_survey
+      const addedPestsDiseases = await pestsDiseasesSurvey.bulkCreate(
+        pestsAndDiseases
+      );
+
+      if (!addedPestsDiseases)
+        return res.status(500).json({
+          status: "fail",
+          message: "insert to rtc_pests_diseases_survey failed",
+        });
 
       // rtc_observation_diseases_survey
+      const addedObservDiseases = await observationDiseasesSurvey.bulkCreate(
+        observationPests
+      );
+      if (!addedObservDiseases)
+        return res.status(500).json({
+          status: "fail",
+          message: "insert to rtc_observation_pests_survey failed",
+        });
 
       // rtc_observation_courses_survey
+      const addedObservCourses = await observationCoursesSurvey.bulkCreate(
+        observationCourses
+      );
+
+      if (!addedObservCourses)
+        return res.status(500).json({
+          status: "fail",
+          message: "insert to rtc_observation_courses_survey failed",
+        });
 
       return res.status(200).json({
         status: "success",
