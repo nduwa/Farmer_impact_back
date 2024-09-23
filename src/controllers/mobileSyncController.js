@@ -98,56 +98,74 @@ class mobileSyncController {
 
       const { userId, all = 0 } = req.params;
 
-      if (all == 1) {
-        const stationsForAudit = await stations.findAll();
+      //////////////////////////////////////////////////////
+      const staffData = await staff.findOne({
+        where: { _kf_User: userId },
+      });
 
-        if (!stationsForAudit) {
+      if (!staffData || staffData.length === 0) {
+        let stationAssignedId = userId;
+
+        let surveyorStation = await stations.findOne({
+          where: { __kp_Station: stationAssignedId }, // when it's census survey
+        });
+
+        if (!surveyorStation) {
+          return res
+            .status(404)
+            .json({ status: "fail", message: "station not found" });
+        } else {
+          allStations.push(surveyorStation);
+
+          return res.status(200).json({
+            status: "success",
+            table: "rtc_stations",
+            data: allStations,
+          });
+        }
+      }
+
+      const userStation = await stations.findOne({
+        where: { __kp_Station: staffData._kf_Station },
+      });
+
+      if (all == 1) {
+        const retrievedStations = await stations.findAll();
+
+        if (!retrievedStations) {
           return res
             .status(404)
             .json({ status: "fail", message: "No stations found" });
         }
 
-        allStations = [...stationsForAudit];
-      } else {
-        const staffData = await staff.findOne({
-          where: { _kf_User: userId },
-        });
+        if (userStation) {
+          let index = retrievedStations.findIndex(
+            (station) => station.__kp_Station === userStation.__kp_Station
+          );
 
-        if (!staffData || staffData.length === 0) {
-          let stationAssignedId = userId;
+          if (index !== -1) {
+            let [removedElement] = retrievedStations.splice(index, 1);
 
-          let surveyorStation = await stations.findOne({
-            where: { __kp_Station: stationAssignedId }, // when it's census survey
-          });
-
-          if (!surveyorStation) {
-            console.log(stationAssignedId);
-            return res
-              .status(404)
-              .json({ status: "fail", message: "station not found" });
-          } else {
-            allStations.push(surveyorStation);
-
-            return res.status(200).json({
-              status: "success",
-              table: "rtc_stations",
-              data: allStations,
-            });
+            retrievedStations.unshift(removedElement); // put the assigned station to [0]
           }
         }
 
-        const userStation = await stations.findOne({
-          where: { __kp_Station: staffData._kf_Station },
+        allStations = retrievedStations;
+
+        return res.status(200).json({
+          status: "success",
+          table: "rtc_stations",
+          data: allStations,
         });
-
-        if (!userStation || userStation.length === 0) {
-          return res
-            .status(404)
-            .json({ status: "fail", message: "No station found" });
-        }
-
-        allStations.push(userStation);
       }
+
+      if (!userStation || userStation.length === 0) {
+        return res
+          .status(404)
+          .json({ status: "fail", message: "No station found" });
+      }
+
+      allStations.push(userStation);
 
       return res
         .status(200)
@@ -448,7 +466,6 @@ class mobileSyncController {
 
       let processedResponses = [];
 
-      console.log(responses);
       let newid = lastResponseId.id;
       for (const resp of responses) {
         let tmpObj = {
