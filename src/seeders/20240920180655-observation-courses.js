@@ -127,7 +127,7 @@ module.exports = {
       {
         created_at: new Date(),
         __kp_courses_observation: "14A84DD9-B075-8E44-554C-3895B36DB661",
-        _kf_trees_survey: "0870DD19-8C26-6341-D666-9DB4E6451910",
+        _kf_trees_survey: "4860FB17-4F28-4342-F815-2CD4E6451932",
         course_name: "Inorganic waste",
         rating: "Average",
       },
