@@ -36,6 +36,22 @@ module.exports = {
         created_at: new Date(),
         status: 1,
       },
+      {
+        __kp_User: "52F69D73-DFEB-2F28-1C48-DB38FB2C2563",
+        user_id: "CS003",
+        Name_Full: "Muvunyi Emmanuel",
+        Name_User: "memmanuel",
+        _kf_supplier: "07463891-1754-4912-B22B-FA01835012D8",
+        _kf_station: "F9642FF7-694C-4B99-A5B4-0FA1028C4AEC",
+        station_name: "Muhura",
+        email: "doe@gmail.com",
+        phone: "0781230123",
+        password:
+          "$2a$08$kWQqKwXmUyfi.z2AyVh6guqhsVy1z/qlo9xergNShcdtbnD5HfFUi", // 123
+        role: "surveyor",
+        created_at: new Date(),
+        status: 1,
+      },
     ]);
   },
 

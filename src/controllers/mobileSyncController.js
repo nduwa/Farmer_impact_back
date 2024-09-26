@@ -20,10 +20,14 @@ import household_trees from "../models/rtc_household_trees";
 import Farm_coordinations from "../models/rtc_farm_coordinations";
 import Farm_coordinates from "../models/rtc_farm_coordinates";
 import farmerUpdates from "../models/tmp_farmer_updates";
+import treeSurvey from "../models/rtc_tree_survey";
+import treeDetailsSurvey from "../models/rtc_tree_details_survey";
+import pestsDiseasesSurvey from "../models/rtc_pests_diseases_survey";
+import observationCoursesSurvey from "../models/rtc_observation_courses_survey";
+import observationDiseasesSurvey from "../models/rtc_observation_diseases_survey";
 
 import { Op } from "sequelize";
 import { getCurrentDate } from "../helpers/getCurrentDate";
-import generateUUID from "../helpers/randomStringGenerator";
 
 class mobileSyncController {
   static async retrieveSupplier(req, res) {
@@ -67,9 +71,7 @@ class mobileSyncController {
     try {
       let allSeasons = [];
 
-      const season = await seasons.findOne({
-        order: [["z_recCreateTimestamp", "DESC"]],
-      });
+      const season = await seasons.findOne({ where: { Default: 1 } });
 
       if (!season || season.length === 0) {
         return res
@@ -87,62 +89,82 @@ class mobileSyncController {
       return res.status(500).json({ status: "fail", error: error.message });
     }
   }
+
   static async retrieveStations(req, res) {
     try {
       let allStations = [];
 
-      const { userId, all = 0 } = req.params;
+      const { userId } = req.params;
+      const { all = 1 } = req.query;
+
+      const staffData = await staff.findOne({
+        where: { _kf_User: userId },
+      });
+
+      if (!staffData || staffData.length === 0) {
+        let stationAssignedId = userId;
+
+        let surveyorStation = await stations.findOne({
+          where: { __kp_Station: stationAssignedId }, // when it's census survey
+        });
+
+        if (!surveyorStation) {
+          return res
+            .status(404)
+            .json({ status: "fail", message: "station not found" });
+        } else {
+          allStations.push(surveyorStation);
+
+          console.log(allStations);
+          return res.status(200).json({
+            status: "success",
+            table: "rtc_stations",
+            data: allStations,
+          });
+        }
+      }
+
+      const userStation = await stations.findOne({
+        where: { __kp_Station: staffData._kf_Station },
+      });
 
       if (all == 1) {
-        const stationsForAudit = await stations.findAll();
+        const retrievedStations = await stations.findAll();
 
-        if (!stationsForAudit) {
+        if (!retrievedStations) {
           return res
             .status(404)
             .json({ status: "fail", message: "No stations found" });
         }
 
-        allStations = [...stationsForAudit];
-      } else {
-        const staffData = await staff.findOne({
-          where: { _kf_User: userId },
-        });
+        if (userStation) {
+          let index = retrievedStations.findIndex(
+            (station) => station.__kp_Station === userStation.__kp_Station
+          );
 
-        if (!staffData || staffData.length === 0) {
-          let stationAssignedId = userId;
+          if (index !== -1) {
+            let [removedElement] = retrievedStations.splice(index, 1);
 
-          let surveyorStation = await stations.findOne({
-            where: { __kp_Station: stationAssignedId }, // when it's census survey
-          });
-
-          if (!surveyorStation) {
-            console.log(stationAssignedId);
-            return res
-              .status(404)
-              .json({ status: "fail", message: "station not found" });
-          } else {
-            allStations.push(surveyorStation);
-
-            return res.status(200).json({
-              status: "success",
-              table: "rtc_stations",
-              data: allStations,
-            });
+            retrievedStations.unshift(removedElement); // put the assigned station to [0]
           }
         }
 
-        const userStation = await stations.findOne({
-          where: { __kp_Station: staffData._kf_Station },
+        allStations = retrievedStations;
+
+        return res.status(200).json({
+          status: "success",
+          table: "rtc_stations",
+          data: allStations,
         });
-
-        if (!userStation || userStation.length === 0) {
-          return res
-            .status(404)
-            .json({ status: "fail", message: "No station found" });
-        }
-
-        allStations.push(userStation);
       }
+
+      if (!userStation || userStation.length === 0) {
+        return res
+          .status(404)
+          .json({ status: "fail", message: "No station found" });
+      }
+
+      allStations.push(userStation);
 
       return res
         .status(200)
@@ -443,7 +465,6 @@ class mobileSyncController {
 
       let processedResponses = [];
 
-      console.log(responses);
       let newid = lastResponseId.id;
       for (const resp of responses) {
         let tmpObj = {
@@ -1014,26 +1035,64 @@ class mobileSyncController {
       console.log("hehe");
 
       const {
-        observation_on_courses,
-        observation_on_diseases,
-        pests_and_diseases,
-        trees_survey,
-        trees_details,
+        treeSurveyObj,
+        treeDetails,
+        pestsAndDiseases,
+        observationPests,
+        observationCourses,
       } = survey;
 
       // rtc_trees_survey
-      const treeSurveyObj = {
-        ...trees_survey,
-        updated_at: getCurrentDate(),
-      };
+      let { uploaded, ...cleanedTreeSurvey } = treeSurveyObj;
+
+      const addedSurvey = await treeSurvey.create(cleanedTreeSurvey);
+
+      if (!addedSurvey)
+        return res.status(500).json({
+          status: "fail",
+          message: "insert to rtc_trees_survey failed",
+        });
 
       // rtc_tree_details_survey
+      const addDetails = await treeDetailsSurvey.bulkCreate(treeDetails);
+
+      if (!addDetails)
+        return res.status(500).json({
+          status: "fail",
+          message: "insert to rtc_trees_details_survey failed",
+        });
 
       // rtc_pests_diseases_survey
+      const addedPestsDiseases = await pestsDiseasesSurvey.bulkCreate(
+        pestsAndDiseases
+      );
+
+      if (!addedPestsDiseases)
+        return res.status(500).json({
+          status: "fail",
+          message: "insert to rtc_pests_diseases_survey failed",
+        });
 
       // rtc_observation_diseases_survey
+      const addedObservDiseases = await observationDiseasesSurvey.bulkCreate(
+        observationPests
+      );
+      if (!addedObservDiseases)
+        return res.status(500).json({
+          status: "fail",
+          message: "insert to rtc_observation_pests_survey failed",
+        });
 
       // rtc_observation_courses_survey
+      const addedObservCourses = await observationCoursesSurvey.bulkCreate(
+        observationCourses
+      );
+
+      if (!addedObservCourses)
+        return res.status(500).json({
+          status: "fail",
+          message: "insert to rtc_observation_courses_survey failed",
+        });
 
       return res.status(200).json({
         status: "success",
