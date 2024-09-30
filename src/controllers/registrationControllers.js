@@ -6,17 +6,20 @@ class RegistrationsController {
     try {
       const page = parseInt(req.query.page, 10) || 1;
       const pageSize = parseInt(req.query.pageSize, 10) || 100;
+      const status = parseInt(req.query.status, 10) || "new";
       const offset = (page - 1) * pageSize;
       const limit = pageSize;
       const kp_station = req.user?.staff?._kf_Station;
-  
-      const { count, rows: RegistrationData } = await GroupAssignment.findAndCountAll({
-        where: {
-          _kf_station: kp_station, // Filter where kf_station equals kp_station
-        },
-        offset,
-        limit,
-      });
+
+      const { count, rows: RegistrationData } =
+        await GroupAssignment.findAndCountAll({
+          where: {
+            status,
+            _kf_station: kp_station, // Filter where kf_station equals kp_station
+          },
+          offset,
+          limit,
+        });
       if (!RegistrationData || RegistrationData.length === 0) {
         return res.status(404).json({
           status: "Failed",
