@@ -105,4 +105,9 @@ mobileSyncRoutes.post(
   mobileSyncController.submitCensusSurvey
 );
 
+mobileSyncRoutes.get(
+  "/transactions/closed/:stationId/:seasonId",
+  mobileSyncController.calculateCherriesReported
+);
+
 export default mobileSyncRoutes;

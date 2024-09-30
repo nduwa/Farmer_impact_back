@@ -26,7 +26,7 @@ import pestsDiseasesSurvey from "../models/rtc_pests_diseases_survey";
 import observationCoursesSurvey from "../models/rtc_observation_courses_survey";
 import observationDiseasesSurvey from "../models/rtc_observation_diseases_survey";
 
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import { getCurrentDate } from "../helpers/getCurrentDate";
 
 class mobileSyncController {
@@ -115,7 +115,6 @@ class mobileSyncController {
         } else {
           allStations.push(surveyorStation);
 
-          console.log(allStations);
           return res.status(200).json({
             status: "success",
             table: "rtc_stations",
@@ -1032,8 +1031,6 @@ class mobileSyncController {
         });
       }
 
-      console.log("hehe");
-
       const {
         treeSurveyObj,
         treeDetails,
@@ -1096,6 +1093,52 @@ class mobileSyncController {
 
       return res.status(200).json({
         status: "success",
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ status: "fail", error });
+    }
+  }
+
+  static async calculateCherriesReported(req, res) {
+    try {
+      const { stationId, seasonId } = req.params;
+
+      if (!stationId || !seasonId) {
+        return res.status(400).json({
+          status: "fail",
+          message: `incomplete data`,
+        });
+      }
+
+      const closedTransactions = await transactions.findAll({
+        attributes: [
+          [Sequelize.fn("SUM", Sequelize.col("kilograms")), "total_kilograms"],
+          [
+            Sequelize.fn("SUM", Sequelize.col("bad_kilograms")),
+            "total_bad_kilograms",
+          ],
+        ],
+        where: {
+          _kf_Station: stationId,
+          _kf_Season: seasonId,
+          [Op.or]: [
+            {
+              closed_at: {
+                [Op.ne]: null,
+              },
+            },
+            {
+              closed_at: "0000-00-00 00:00:00",
+            },
+          ],
+        },
+        raw: true, // This will return plain objects instead of Sequelize instances
+      });
+
+      return res.status(200).json({
+        status: "success",
+        closedTransactions,
       });
     } catch (error) {
       console.log(error);
