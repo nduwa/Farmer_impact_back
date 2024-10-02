@@ -1,4 +1,7 @@
 import TreeServey from "../models/rtc_tree_servey";
+import Trees_Survey from "../models/rtc_tree_survey";
+import Tree_details_Survey from "../models/rtc_tree_details_survey";
+const { Op } = require("sequelize");
 
 class HouseholdTreeServey {
   static async getAllHouseholdTrees(req, res) {
@@ -13,9 +16,6 @@ class HouseholdTreeServey {
         await TreeServey.findAndCountAll({
           offset,
           limit,
-          // where:{
-          //   status:"new"
-          // },
         });
 
       if (allHouseholdTrees.length === 0) {
@@ -48,9 +48,9 @@ class HouseholdTreeServey {
     try {
       const id = req.query.id;
       const station = req.user.staff._kf_Station;
-      const householdTree = await TreeServey.findOne({
+      const householdTree = await Trees_Survey.findOne({
         where: {
-          ID: id,
+          id: id,
         },
       });
 
@@ -67,7 +67,7 @@ class HouseholdTreeServey {
           message: "Household tree is already approved",
         });
       }
-      if (householdTree._kf_Station !== station) {
+      if (householdTree._kf_Station !== station || "") {
         return res.status(400).json({
           status: "Fail",
           message: "You can not approve trees which are not from your station",
@@ -93,9 +93,9 @@ class HouseholdTreeServey {
     try {
       const id = req.query.id;
       const station = req.user.staff._kf_Station;
-      const householdTree = await TreeServey.findOne({
+      const householdTree = await Trees_Survey.findOne({
         where: {
-          ID: id,
+          id: id,
         },
       });
 
@@ -112,7 +112,7 @@ class HouseholdTreeServey {
           message: "Household tree is already verified",
         });
       }
-      if (householdTree._kf_Station !== station) {
+      if (householdTree._kf_Station !== station || "") {
         return res.status(400).json({
           status: "Fail",
           message: "You can not approve trees which are not from your station",
@@ -269,6 +269,109 @@ class HouseholdTreeServey {
       console.log("Record inserted successfully:", newRecord);
     } catch (error) {
       console.error("Error inserting record:", error);
+    }
+  }
+
+  static async getAllTreeSurveys(req, res) {
+    try {
+      const page = parseInt(req.query.page, 10) || 1;
+      const pageSize = parseInt(req.query.pageSize, 10) || 100;
+
+      const offset = (page - 1) * pageSize;
+      const limit = pageSize;
+
+      const { count, rows: allHouseholdTrees } =
+        await Trees_Survey.findAndCountAll({
+          offset,
+          limit,
+        });
+
+      if (allHouseholdTrees.length === 0) {
+        return res.status(404).json({
+          status: "fail",
+          message: "No household trees records found",
+        });
+      }
+
+      return res.status(200).json({
+        status: "success",
+        message: "Household trees records retrieved successfully",
+        data: {
+          totalItems: count,
+          totalPages: Math.ceil(count / pageSize),
+          currentPage: page,
+          household: allHouseholdTrees,
+        },
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        status: "error",
+        message: "Internal server error",
+      });
+    }
+  }
+  static async getTreeSurveyDetails(req, res) {
+    const kpTreesSurvey = req.query.kpTreesSurvey;
+    const treeDetails = await Tree_details_Survey.findOne({
+      where: {
+        _kf_trees_survey: kpTreesSurvey,
+      },
+    });
+    if (!treeDetails || treeDetails.length === 0) {
+      return res.status(404).json({
+        status: "Fail",
+        message: "No details for that tree available",
+      });
+    }
+    return res.status(200).json({
+      status: "Success",
+      message: "Details retrieved successfully",
+      data: treeDetails,
+    });
+  }
+  static async getTreeSurveysByDate(req, res) {
+    try {
+      const { startDate, endDate } = req.query;
+
+      if (!startDate || !endDate) {
+        return res.status(400).json({
+          status: "fail",
+          message: "Please provide both startDate and endDate",
+        });
+      }
+
+      if (new Date(endDate) < new Date(startDate)) {
+        return res.status(400).json({
+          status: "fail",
+          message: "endDate should be greater than or equal to startDate",
+        });
+      }
+
+      const allHouseholdTrees = await Trees_Survey.findAll({
+        where: {
+          created_at: {
+            [Op.between]: [new Date(startDate), new Date(endDate)],
+          },
+        },
+      });
+      if (allHouseholdTrees.length === 0) {
+        return res.status(404).json({
+          status: "fail",
+          message: "No household trees records found for the given date range",
+        });
+      }
+      return res.status(200).json({
+        status: "success",
+        message: "Household trees records retrieved successfully",
+        data: allHouseholdTrees,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+        status: "error",
+        message: "Internal server error",
+      });
     }
   }
 }

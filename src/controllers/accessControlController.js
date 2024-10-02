@@ -59,25 +59,43 @@ class AccessControlController {
   static async assignPermissionsToUser(req, res) {
     try {
       const permissionsArray = req.body;
-
-      // Validate that permissionsArray is an array
+  
       if (!Array.isArray(permissionsArray)) {
         return res.status(400).json({
           success: false,
           message: "Permissions should be an array of objects",
         });
       }
-
+  
       if (permissionsArray.length === 0) {
         return res.status(400).json({
           success: false,
           message: "Permissions array should not be empty",
         });
       }
-
+  
       const userId = permissionsArray[0].userid;
       const platform = permissionsArray[0].platform;
-
+  
+      // Fetch existing permissions for the user
+      const existingPermissions = await Mobile_App.findAll({
+        where: {
+          userid: userId,
+          platform: platform,
+        },
+      });
+  
+      // Map existing permissions to easily compare
+      const existingPermissionsMap = new Map();
+      existingPermissions.forEach(permission => {
+        existingPermissionsMap.set(permission.moduleid, permission);
+      });
+  console.log("heheheheh", existingPermissions , existingPermissions.length)
+      // Determine removed permissions before deletion
+      const removedPermissions = existingPermissions.filter(permission =>
+        !permissionsArray.some(newPermission => newPermission.moduleid === permission.moduleid)
+      );
+  
       // Delete existing permissions for the user
       await Mobile_App.destroy({
         where: {
@@ -85,37 +103,46 @@ class AccessControlController {
           platform: platform,
         },
       });
-
-      const savedPermissions = [];
-
-      // Loop through the array and save each permission
-      for (const permissionData of permissionsArray) {
-        const permission = Mobile_App.build({
-          userid: permissionData.userid,
-          moduleid: permissionData.moduleid,
-          view_record: permissionData.view_record,
-          add_record: permissionData.add_record,
-          delete_record: permissionData.delete_record,
-          edit_record: permissionData.edit_record,
-          platform: permissionData.platform,
-        });
-
-        const savedPermission = await permission.save();
-        savedPermissions.push(savedPermission);
-      }
-
+  
+      // Save new permissions
+      const savedPermissions = await Promise.all(
+        permissionsArray.map(permissionData => {
+          const permission = Mobile_App.build({
+            userid: permissionData.userid,
+            moduleid: permissionData.moduleid,
+            view_record: permissionData.view_record,
+            add_record: permissionData.add_record,
+            delete_record: permissionData.delete_record,
+            edit_record: permissionData.edit_record,
+            platform: permissionData.platform,
+          });
+  
+          return permission.save();
+        })
+      );
+  
+      // Determine added permissions
+      const addedPermissions = permissionsArray.filter(permissionData => 
+        !existingPermissionsMap.has(permissionData.moduleid)
+      );
+  
+      console.log("removed",removedPermissions, removedPermissions.length);
+      console.log("saved",savedPermissions, savedPermissions.length);
+  
       res.status(200).json({
         success: true,
         message: "Permissions assigned successfully",
+        addedPermissions: addedPermissions,
+        removedPermissions: removedPermissions,
         data: savedPermissions,
       });
     } catch (error) {
       console.error("Error assigning permissions:", error.message);
-      res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
+      res.status(500).json({ success: false, message: "Internal server error" });
     }
   }
+  
+  
 
   static async createModule(req, res) {
     try {

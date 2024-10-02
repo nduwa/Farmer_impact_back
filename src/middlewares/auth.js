@@ -7,7 +7,7 @@ const verifyToken = (req, res, next) => {
         if (!token) {
             return res.status(401).json({
                 status: 'Fail',
-                Message: "Please login to continue"
+                message: "Please login to continue"
             });
         }
 
@@ -18,19 +18,19 @@ const verifyToken = (req, res, next) => {
         } else {
             return res.status(401).json({
                 status: "fail",
-                Message: "Login to continue"
+                message: "Login to continue"
             });
         }
     } catch (err) {
         if (err.expiredAt && err.expiredAt < new Date()) {
             return res.status(401).json({
                 status: "Fail",
-                Message: "Your token has expired, please login again"
+                message: "Your token has expired, please login again"
             });
         } else {
             return res.status(400).json({
                 status: 'Fail',
-                Message: "Token is not valid"
+                message: "Token is not valid"
             });
         }
     }

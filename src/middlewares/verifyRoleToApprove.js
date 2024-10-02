@@ -1,6 +1,6 @@
 import Jwt from "jsonwebtoken";
 
-const verifyRole = (req, res, next) => {
+const verifyRoleToApprove = (req, res, next) => {
   const token = req.header("auth_token");
 
   if (!token) {
@@ -9,14 +9,15 @@ const verifyRole = (req, res, next) => {
       message: "Login first to continue",
     });
   }
-
   try {
     const decodedToken = Jwt.verify(token, process.env.JWT_SECRET);
+    console.log("decode", req.user.staff);
 
     const userRole = req.user?.staff?.Role;
+    console.log("User role:", userRole);
 
     if (
-      userRole !== "System Admin" &&
+      userRole !== "Washing Station Accountant" &&
       userRole !== "Field Officer" &&
       userRole !== "Washing Station Manager"
     ) {
@@ -35,4 +36,4 @@ const verifyRole = (req, res, next) => {
   }
 };
 
-export default verifyRole;
+export default verifyRoleToApprove;

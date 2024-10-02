@@ -14,7 +14,7 @@ class FarmerController {
     
       const { count, rows: farmerData } = await Field_farmer.findAndCountAll({
         where: {
-          _kf_station: kp_station, // Filtering farmers by matching station
+          _kf_station: kp_station || "", 
         },
         offset,
         limit,

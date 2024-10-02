@@ -14,8 +14,8 @@ class RegistrationsController {
       const { count, rows: RegistrationData } =
         await GroupAssignment.findAndCountAll({
           where: {
-            status,
-            _kf_station: kp_station, // Filter where kf_station equals kp_station
+            // status,
+            _kf_station: kp_station || "",
           },
           offset,
           limit,
