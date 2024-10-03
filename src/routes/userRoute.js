@@ -9,5 +9,6 @@ userRoutes.put("/update/:userId", UserController.updateUser);
 userRoutes.get("/user/:userId", UserController.getSingleUser);
 userRoutes.get("/staff", UserController.getAllStaff);
 userRoutes.get("/staff/:userId", UserController.getSingleStaff);
+userRoutes.get("/supplier", UserController.getAllSupplier);
 
 export default userRoutes;

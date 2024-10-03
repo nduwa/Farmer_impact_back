@@ -5,6 +5,8 @@ import verifyToken from "../middlewares/auth";
 const router = express.Router();
 
 router.get("/dailyJournal", verifyToken, coffeePuchase.getSCDailyJournals);
+router.get("/Journals", coffeePuchase.getAllJournals);
+router.get("/CurrentSeason", coffeePuchase.getCurrentSeasons);
 router.get(
   "/dailyJournal/:journalId",
   verifyToken,
@@ -46,8 +48,8 @@ router.post(
   verifyToken,
   coffeePuchase.AddTransactionBucket
 );
-router.post('/bucketweight', verifyToken,coffeePuchase.TransactionBucketWeight)
-router.get('/dryweighting',coffeePuchase.getAllBucketWeighting)
+router.post('/bucketweight', verifyToken, coffeePuchase.TransactionBucketWeight)
+router.get('/dryweighting', coffeePuchase.getAllBucketWeighting)
 //router.put('/closeAndSubmit/:cherryLotId',coffeePuchase.CloseAndSubmitTransaction)
 
 
