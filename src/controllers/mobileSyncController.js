@@ -25,6 +25,7 @@ import treeDetailsSurvey from "../models/rtc_tree_details_survey";
 import pestsDiseasesSurvey from "../models/rtc_pests_diseases_survey";
 import observationCoursesSurvey from "../models/rtc_observation_courses_survey";
 import observationDiseasesSurvey from "../models/rtc_observation_diseases_survey";
+import bucketing from "../models/bucketing";
 
 import { Op, Sequelize } from "sequelize";
 import { getCurrentDate } from "../helpers/getCurrentDate";
@@ -1136,9 +1137,47 @@ class mobileSyncController {
         raw: true, // This will return plain objects instead of Sequelize instances
       });
 
+      if (!closedTransactions) {
+        return res.status(404).json({
+          status: "fail",
+          message: `closed transactions not found`,
+        });
+      }
+
+      const buckets = await bucketing.findAll({
+        attributes: [
+          [
+            Sequelize.fn(
+              "SUM",
+              Sequelize.literal("bucketA + bucketB + bucketC")
+            ),
+            "total_buckets",
+          ],
+        ],
+        // Use sequelize.literal for the JOIN and WHERE condition
+        where: Sequelize.literal(`
+          EXISTS (
+            SELECT 1
+            FROM rtc_transactions AS transactions
+            WHERE transactions.cherry_lot_id = bucketing.day_lot_number
+            AND transactions._kf_Station = '${stationId}'
+            AND transactions._kf_Season = '${seasonId}'
+          )
+        `),
+        raw: true,
+      });
+
+      if (!buckets) {
+        return res.status(404).json({
+          status: "fail",
+          message: `buckets not found`,
+        });
+      }
+
       return res.status(200).json({
         status: "success",
         closedTransactions,
+        buckets,
       });
     } catch (error) {
       console.log(error);
