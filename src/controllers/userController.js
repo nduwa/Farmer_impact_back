@@ -1,5 +1,6 @@
 import { Op, where } from "sequelize";
 import Users from "../models/rtc_users";
+import Supplier from "../models/rtc_supplier";
 import userValidationSchema from "../validations/userValidations";
 import loginValidationSchema from "../validations/loginValidation";
 import bcrypt from "bcrypt";
@@ -157,6 +158,22 @@ class UserController {
           .json({ status: "fail", message: "No users found" });
       }
       return res.status(200).json({ status: "success", data: staffs });
+    } catch (error) {
+      return res.status(500).json({ status: "fail", error: error.message });
+    }
+  }
+
+  // get all suppliers data
+  static async getAllSupplier(req, res) {
+    try {
+      const suppliers = await Supplier.findAll();
+
+      if (!suppliers || suppliers.length === 0) {
+        return res
+          .status(404)
+          .json({ status: "fail", message: "No supplier found" });
+      }
+      return res.status(200).json({ status: "success", data: suppliers });
     } catch (error) {
       return res.status(500).json({ status: "fail", error: error.message });
     }

@@ -7,6 +7,62 @@ import Dry from "../models/rtc_drying";
 import generateUUID from "../helpers/randomStringGenerator";
 import Lock_cherries from "../models/rtc_lock_cherry_lot";
 class CoffeePurchaseController {
+  
+//get all transactions/journals
+static async getAllJournals(req, res) {
+  try {
+    let whereCondition = {};
+
+    Season.findOne(
+      {
+        attributes: ["__kp_Season"],
+        order: [["id", "DESC"]],
+        raw: true,
+        limit: 1,
+      },
+      { where: { Default: 1 } }
+    ).then((seasonData) => {
+      const kp_season = seasonData.__kp_Season;
+        whereCondition = { _kf_Season: kp_season, status: 0 };
+      Transaction.findAll({ where: whereCondition})
+      .then((transactionData) => {
+        if (!transactionData || transactionData.length === 0) {
+          return res.status(404).json({
+            status: "fail",
+            message: "No transaction found",
+          });
+        }
+        return res.status(200).json({
+          status: "success",
+          message: "all Transaction retieved successfull",
+          data: transactionData,
+        });
+      });
+    });
+  } catch (error) {
+    return res.status(500).json({ status: "fail", error: error.message });
+  }
+}
+//get current season data
+static async getCurrentSeasons(req, res) {
+  try {
+    const currentSeasons = await Season.findAll(
+    { where: { Default: 1 } });
+    if (!currentSeasons || currentSeasons.length === 0) {
+      return res.status(404).json({
+        status: "fail",
+        message: "No season found",
+      });
+    }
+    return res.status(200).json({
+      status: "success",
+      message: "curreny seasons supplier retieved!!",
+      data: currentSeasons,
+    });
+  } catch (error) {
+    return res.status(500).json({ status: "fail", error: error.message });
+  }
+}
   //get all transactions/journals
   static async getSCDailyJournals(req, res) {
     try {
