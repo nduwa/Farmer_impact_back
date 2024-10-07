@@ -1,6 +1,7 @@
 import GroupAssignment from "../models/rtc_farmer_group_assignment";
 import Farmers from "../models/rtc_farmers";
 import Households from "../models/rtc_households"
+import Groups from "../models/rtc_groups"
 
 class RegistrationsController {
   static async getNewRegistrations(req, res) {
@@ -144,9 +145,10 @@ class RegistrationsController {
             __kp_Farmer: registration._kf_farmer,
           },
         });
-
+        
         if (farmer) {
           // Update the farmer
+          
           await Farmers.update(
             {
               _kf_Group: registration.kf_group_new,
@@ -181,6 +183,25 @@ class RegistrationsController {
             );
           }
 
+          const group = await Groups.findOne({
+            where: {
+              __kp_Group: registration.kf_group_new,
+            },
+          });
+
+          if (group) {
+            await Groups.update(
+              {
+                sync_farmers: '1',
+                last_update_at: Date.now(),
+                active: 1,
+              },
+              {
+                where: { id: group.id },
+              }
+            );
+          }
+
           updatedFarmers.push(farmer);
 
           await GroupAssignment.update(
@@ -203,6 +224,7 @@ class RegistrationsController {
       });
     }
   }
+
 
 }
 
