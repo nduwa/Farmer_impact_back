@@ -26,9 +26,12 @@ import pestsDiseasesSurvey from "../models/rtc_pests_diseases_survey";
 import observationCoursesSurvey from "../models/rtc_observation_courses_survey";
 import observationDiseasesSurvey from "../models/rtc_observation_diseases_survey";
 import bucketing from "../models/bucketing";
-
+import transporter from "../database/mailConfig";
+import dotenv from "dotenv";
 import { Op, Sequelize } from "sequelize";
 import { getCurrentDate } from "../helpers/getCurrentDate";
+
+dotenv.config();
 
 class mobileSyncController {
   static async retrieveSupplier(req, res) {
@@ -1178,6 +1181,48 @@ class mobileSyncController {
         status: "success",
         closedTransactions,
         buckets,
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ status: "fail", error });
+    }
+  }
+
+  static async submitWetmillReport(req, res) {
+    try {
+      const { filepath, station, user } = req.query;
+
+      let tmpArr = filepath.split("/");
+      let filename = tmpArr[tmpArr.length - 1];
+
+      tmpArr = filename.split("-");
+
+      tmpArr = tmpArr[tmpArr.length - 1].split(".");
+
+      let timestamp = tmpArr[0];
+
+      const date = new Date(timestamp * 1000);
+
+      const reportDate = date.toLocaleString();
+
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: process.env.EMAIL_WETMILL_TO,
+        subject: `Wetmill report - ${station} - ${reportDate}`,
+        text: `The attached file contains details of the wetmill report for ${station} conducted by ${user}`,
+        attachments: [
+          {
+            filename,
+            path: filepath,
+          },
+        ],
+      };
+
+      const info = await transporter.sendMail(mailOptions);
+      console.log("Email sent:", info.response);
+
+      return res.status(200).json({
+        status: "success",
       });
     } catch (error) {
       console.log(error);

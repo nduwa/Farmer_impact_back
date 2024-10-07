@@ -20,11 +20,14 @@ const storage = multer.diskStorage({
     cb(null, directory);
   },
   filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
+    cb(null, `${file.originalname}`);
   },
 });
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith("image")) {
+  if (
+    file.mimetype.startsWith("image") ||
+    file.mimetype === "application/pdf"
+  ) {
     cb(null, true);
   } else {
     cb(null, false);
@@ -108,6 +111,15 @@ mobileSyncRoutes.post(
 mobileSyncRoutes.get(
   "/transactions/closed/:stationId/:seasonId",
   mobileSyncController.calculateCherriesReported
+);
+
+mobileSyncRoutes.post(
+  "/wetmill",
+  upload.single("wetmillaudit_file"),
+  (req, res, next) => {
+    next();
+  },
+  mobileSyncController.submitWetmillReport
 );
 
 export default mobileSyncRoutes;
