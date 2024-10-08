@@ -1,5 +1,7 @@
 import GroupAssignment from "../models/rtc_farmer_group_assignment";
 import Farmers from "../models/rtc_farmers";
+import Households from "../models/rtc_households"
+import Groups from "../models/rtc_groups"
 
 class RegistrationsController {
   static async getNewRegistrations(req, res) {
@@ -14,8 +16,7 @@ class RegistrationsController {
       const { count, rows: RegistrationData } =
         await GroupAssignment.findAndCountAll({
           where: {
-            // status,
-            _kf_station: kp_station || "",
+            ...(kp_station && { _kf_station: kp_station }),
           },
           offset,
           limit,
@@ -144,27 +145,72 @@ class RegistrationsController {
             __kp_Farmer: registration._kf_farmer,
           },
         });
-
+        
         if (farmer) {
+          // Update the farmer
+          
           await Farmers.update(
             {
               _kf_Group: registration.kf_group_new,
               _kf_Supplier: registration._kf_Supplier,
               _kf_Station: registration._kf_station,
+              type: 'online',
+              updated_at: Date.now(),
             },
             {
               where: { __kp_Farmer: farmer.__kp_Farmer },
             }
           );
 
-          updatedFarmers.push(farmer);
-        }
+          const household = await Households.findOne({
+            where: {
+              farmerid: farmer.farmerid,
+            },
+          });
 
-        await GroupAssignment.update(
-          { status: "deleted" },
-          { where: { id: registration.id } }
-        );
+          if (household) {
+            await Households.update(
+              {
+                _kf_Group: registration.kf_group_new,
+                _kf_Supplier: registration._kf_Supplier,
+                _kf_Station: registration._kf_station,
+                type: 'online',
+                status: 'Active',
+              },
+              {
+                where: { id: household.id },
+              }
+            );
+          }
+
+          const group = await Groups.findOne({
+            where: {
+              __kp_Group: registration.kf_group_new,
+            },
+          });
+
+          if (group) {
+            await Groups.update(
+              {
+                sync_farmers: '1',
+                last_update_at: Date.now(),
+                active: 1,
+              },
+              {
+                where: { id: group.id },
+              }
+            );
+          }
+
+          updatedFarmers.push(farmer);
+
+          await GroupAssignment.update(
+            { status: "deleted" },
+            { where: { id: registration.id } }
+          );
+        }
       }
+
       return res.status(200).json({
         status: "success",
         message: "Farmers and registrations updated successfully!",
@@ -178,6 +224,8 @@ class RegistrationsController {
       });
     }
   }
+
+
 }
 
 export default RegistrationsController;

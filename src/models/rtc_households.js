@@ -49,7 +49,7 @@ const Household = sequelize.define("rtc_households", {
     allowNull: false,
   },
   type: {
-    type: DataTypes.ENUM("new", "offline"),
+    type: DataTypes.ENUM('new', 'offline','online'),
     allowNull: false,
   },
   farmerid: {
