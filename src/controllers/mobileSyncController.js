@@ -25,9 +25,13 @@ import treeDetailsSurvey from "../models/rtc_tree_details_survey";
 import pestsDiseasesSurvey from "../models/rtc_pests_diseases_survey";
 import observationCoursesSurvey from "../models/rtc_observation_courses_survey";
 import observationDiseasesSurvey from "../models/rtc_observation_diseases_survey";
-
-import { Op } from "sequelize";
+import bucketing from "../models/bucketing";
+import transporter from "../database/mailConfig";
+import dotenv from "dotenv";
+import { Op, Sequelize } from "sequelize";
 import { getCurrentDate } from "../helpers/getCurrentDate";
+
+dotenv.config();
 
 class mobileSyncController {
   static async retrieveSupplier(req, res) {
@@ -115,7 +119,6 @@ class mobileSyncController {
         } else {
           allStations.push(surveyorStation);
 
-          console.log(allStations);
           return res.status(200).json({
             status: "success",
             table: "rtc_stations",
@@ -1032,8 +1035,6 @@ class mobileSyncController {
         });
       }
 
-      console.log("hehe");
-
       const {
         treeSurveyObj,
         treeDetails,
@@ -1093,6 +1094,132 @@ class mobileSyncController {
           status: "fail",
           message: "insert to rtc_observation_courses_survey failed",
         });
+
+      return res.status(200).json({
+        status: "success",
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ status: "fail", error });
+    }
+  }
+
+  static async calculateCherriesReported(req, res) {
+    try {
+      const { stationId, seasonId } = req.params;
+
+      if (!stationId || !seasonId) {
+        return res.status(400).json({
+          status: "fail",
+          message: `incomplete data`,
+        });
+      }
+
+      const closedTransactions = await transactions.findAll({
+        attributes: [
+          [Sequelize.fn("SUM", Sequelize.col("kilograms")), "total_kilograms"],
+          [
+            Sequelize.fn("SUM", Sequelize.col("bad_kilograms")),
+            "total_bad_kilograms",
+          ],
+        ],
+        where: {
+          _kf_Station: stationId,
+          _kf_Season: seasonId,
+          [Op.or]: [
+            {
+              closed_at: {
+                [Op.ne]: null,
+              },
+            },
+            {
+              closed_at: "0000-00-00 00:00:00",
+            },
+          ],
+        },
+        raw: true, // This will return plain objects instead of Sequelize instances
+      });
+
+      if (!closedTransactions) {
+        return res.status(404).json({
+          status: "fail",
+          message: `closed transactions not found`,
+        });
+      }
+
+      const buckets = await bucketing.findAll({
+        attributes: [
+          [
+            Sequelize.fn(
+              "SUM",
+              Sequelize.literal("bucketA + bucketB + bucketC")
+            ),
+            "total_buckets",
+          ],
+        ],
+        // Use sequelize.literal for the JOIN and WHERE condition
+        where: Sequelize.literal(`
+          EXISTS (
+            SELECT 1
+            FROM rtc_transactions AS transactions
+            WHERE transactions.cherry_lot_id = bucketing.day_lot_number
+            AND transactions._kf_Station = '${stationId}'
+            AND transactions._kf_Season = '${seasonId}'
+          )
+        `),
+        raw: true,
+      });
+
+      if (!buckets) {
+        return res.status(404).json({
+          status: "fail",
+          message: `buckets not found`,
+        });
+      }
+
+      return res.status(200).json({
+        status: "success",
+        closedTransactions,
+        buckets,
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ status: "fail", error });
+    }
+  }
+
+  static async submitWetmillReport(req, res) {
+    try {
+      const { filepath, station, user } = req.query;
+
+      let tmpArr = filepath.split("/");
+      let filename = tmpArr[tmpArr.length - 1];
+
+      tmpArr = filename.split("-");
+
+      tmpArr = tmpArr[tmpArr.length - 1].split(".");
+
+      let timestamp = tmpArr[0];
+
+      const date = new Date(timestamp * 1000);
+
+      const reportDate = date.toLocaleString();
+
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: process.env.EMAIL_WETMILL_TO,
+        subject: `Wetmill report - ${station} - ${reportDate}`,
+        text: `The attached file contains details of the wetmill report for ${station} conducted by ${user}`,
+        attachments: [
+          {
+            filename,
+            path: filepath,
+          },
+        ],
+      };
+
+      const info = await transporter.sendMail(mailOptions);
+      console.log("Email sent:", info.response);
 
       return res.status(200).json({
         status: "success",
