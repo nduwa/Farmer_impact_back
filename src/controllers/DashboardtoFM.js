@@ -44,12 +44,12 @@ class DashboardtoFM {
         const models = {
             group: { 
                 model: Group, 
-                condition: { Active: '1' }, 
+                condition: { sync_farmers: '1',active: '1' }, 
                 columns: ['Name'] 
             },
             farmer: { 
                 model: Farmer, 
-                condition: { type: 'offline' }, 
+                condition: { type: 'online' }, 
                 columns: ['Name', 'created_by'] 
             },
             household: { 
