@@ -1,7 +1,7 @@
 import GroupAssignment from "../models/rtc_farmer_group_assignment";
 import Farmers from "../models/rtc_farmers";
-import Households from "../models/rtc_households"
-import Groups from "../models/rtc_groups"
+import Households from "../models/rtc_households";
+import Groups from "../models/rtc_groups";
 
 class RegistrationsController {
   static async getNewRegistrations(req, res) {
@@ -145,16 +145,16 @@ class RegistrationsController {
             __kp_Farmer: registration._kf_farmer,
           },
         });
-        
+
         if (farmer) {
           // Update the farmer
-          
+
           await Farmers.update(
             {
               _kf_Group: registration.kf_group_new,
               _kf_Supplier: registration._kf_Supplier,
               _kf_Station: registration._kf_station,
-              type: 'online',
+              type: "online",
               updated_at: Date.now(),
             },
             {
@@ -172,10 +172,11 @@ class RegistrationsController {
             await Households.update(
               {
                 _kf_Group: registration.kf_group_new,
+                group_id: registration.group_id_new,
                 _kf_Supplier: registration._kf_Supplier,
                 _kf_Station: registration._kf_station,
-                type: 'online',
-                status: 'Active',
+                type: "online",
+                status: "Active",
               },
               {
                 where: { id: household.id },
@@ -192,7 +193,7 @@ class RegistrationsController {
           if (group) {
             await Groups.update(
               {
-                sync_farmers: '1',
+                sync_farmers: "1",
                 last_update_at: Date.now(),
                 active: 1,
               },
@@ -224,8 +225,6 @@ class RegistrationsController {
       });
     }
   }
-
-
 }
 
 export default RegistrationsController;
