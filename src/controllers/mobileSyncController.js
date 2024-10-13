@@ -470,11 +470,16 @@ class mobileSyncController {
 
       let newid = lastResponseId.id;
       for (const resp of responses) {
+        let comp_date = resp.compliance_date;
+        if (comp_date < 10) {
+          comp_date = null;
+        }
         let tmpObj = {
           ...resp,
           ...{
             id: newid + 1,
             rtc_inspections_id: newInspection.id,
+            compliance_date: comp_date,
           },
         };
         newid++;
