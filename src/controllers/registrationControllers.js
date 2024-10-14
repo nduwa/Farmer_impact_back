@@ -8,7 +8,6 @@ class RegistrationsController {
     try {
       const page = parseInt(req.query.page, 10) || 1;
       const pageSize = parseInt(req.query.pageSize, 10) || 100;
-      const status = parseInt(req.query.status, 10) || "new";
       const offset = (page - 1) * pageSize;
       const limit = pageSize;
       const kp_station = req.user?.staff?._kf_Station;
@@ -17,16 +16,19 @@ class RegistrationsController {
         await GroupAssignment.findAndCountAll({
           where: {
             ...(kp_station && { _kf_station: kp_station }),
+            status: "new",
           },
           offset,
           limit,
         });
+
       if (!RegistrationData || RegistrationData.length === 0) {
         return res.status(404).json({
           status: "Failed",
           message: "No new Registration found",
         });
       }
+
       return res.status(200).json({
         status: "success",
         message: "All registrations retrieved successfully!",
@@ -44,6 +46,7 @@ class RegistrationsController {
       });
     }
   }
+
   static async verifyRegistration(req, res) {
     try {
       const id = req.query.id;
@@ -83,6 +86,48 @@ class RegistrationsController {
       });
     }
   }
+  static async getVerifiedRegistrations(req, res) {
+    try {
+      const page = parseInt(req.query.page, 10) || 1;
+      const pageSize = parseInt(req.query.pageSize, 10) || 100;
+      const offset = (page - 1) * pageSize;
+      const limit = pageSize;
+      const kp_station = req.user?.staff?._kf_Station;
+
+      const { count, rows: RegistrationData } =
+        await GroupAssignment.findAndCountAll({
+          where: {
+            ...(kp_station && { _kf_station: kp_station }),
+            status: "verified",
+          },
+          offset,
+          limit,
+        });
+      if (!RegistrationData || RegistrationData.length === 0) {
+        return res.status(404).json({
+          status: "Failed",
+          message: "No verified Registration found",
+        });
+      }
+
+      return res.status(200).json({
+        status: "success",
+        message: "All registrations retrieved successfully!",
+        data: {
+          totalItems: count,
+          totalPages: Math.ceil(count / pageSize),
+          currentPage: page,
+          RegistrationData: RegistrationData,
+        },
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: "Failed",
+        error: error.message,
+      });
+    }
+  }
+
   static async ApproveRegistration(req, res) {
     try {
       const id = req.query.id;
@@ -122,7 +167,47 @@ class RegistrationsController {
       });
     }
   }
+  static async getApprovedRegistrations(req, res) {
+    try {
+      const page = parseInt(req.query.page, 10) || 1;
+      const pageSize = parseInt(req.query.pageSize, 10) || 100;
+      const offset = (page - 1) * pageSize;
+      const limit = pageSize;
+      const kp_station = req.user?.staff?._kf_Station;
 
+      const { count, rows: RegistrationData } =
+        await GroupAssignment.findAndCountAll({
+          where: {
+            ...(kp_station && { _kf_station: kp_station }),
+            status: "approved",
+          },
+          offset,
+          limit,
+        });
+      if (!RegistrationData || RegistrationData.length === 0) {
+        return res.status(404).json({
+          status: "Failed",
+          message: "No approved Registration found",
+        });
+      }
+
+      return res.status(200).json({
+        status: "success",
+        message: "All registrations retrieved successfully!",
+        data: {
+          totalItems: count,
+          totalPages: Math.ceil(count / pageSize),
+          currentPage: page,
+          RegistrationData: RegistrationData,
+        },
+      });
+    } catch (error) {
+      return res.status(500).json({
+        status: "Failed",
+        error: error.message,
+      });
+    }
+  }
   static async proceedRegistrations(req, res) {
     try {
       const allRegistrations = await GroupAssignment.findAll({
@@ -147,8 +232,6 @@ class RegistrationsController {
         });
 
         if (farmer) {
-          // Update the farmer
-
           await Farmers.update(
             {
               _kf_Group: registration.kf_group_new,
