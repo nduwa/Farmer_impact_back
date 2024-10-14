@@ -39,7 +39,7 @@ class AccessControlController {
 
       const allAssignedModules = await Mobile_App.findAll({
         where: {
-          userId: loggedinUser,
+          userId: `${loggedinUser}`,
           platform: "mobile",
         },
       });
@@ -59,56 +59,59 @@ class AccessControlController {
   static async assignPermissionsToUser(req, res) {
     try {
       const permissionsArray = req.body;
-  
+
       if (!Array.isArray(permissionsArray)) {
         return res.status(400).json({
           success: false,
           message: "Permissions should be an array of objects",
         });
       }
-  
+
       if (permissionsArray.length === 0) {
         return res.status(400).json({
           success: false,
           message: "Permissions array should not be empty",
         });
       }
-  
+
       const userId = permissionsArray[0].userid;
       const platform = permissionsArray[0].platform;
-  
+
       // Fetch existing permissions for the user
       const existingPermissions = await Mobile_App.findAll({
         where: {
-          userid: userId,
+          userid: `${userId}`,
           platform: platform,
         },
       });
-  
+
       // Map existing permissions to easily compare
       const existingPermissionsMap = new Map();
-      existingPermissions.forEach(permission => {
+      existingPermissions.forEach((permission) => {
         existingPermissionsMap.set(permission.moduleid, permission);
       });
-  console.log("heheheheh", existingPermissions , existingPermissions.length)
+
       // Determine removed permissions before deletion
-      const removedPermissions = existingPermissions.filter(permission =>
-        !permissionsArray.some(newPermission => newPermission.moduleid === permission.moduleid)
+      const removedPermissions = existingPermissions.filter(
+        (permission) =>
+          !permissionsArray.some(
+            (newPermission) => newPermission.moduleid === permission.moduleid
+          )
       );
-  
+
       // Delete existing permissions for the user
       await Mobile_App.destroy({
         where: {
-          userid: userId,
+          userid: `${userId}`,
           platform: platform,
         },
       });
-  
+
       // Save new permissions
       const savedPermissions = await Promise.all(
-        permissionsArray.map(permissionData => {
+        permissionsArray.map((permissionData) => {
           const permission = Mobile_App.build({
-            userid: permissionData.userid,
+            userid: `${permissionData.userid}`,
             moduleid: permissionData.moduleid,
             view_record: permissionData.view_record,
             add_record: permissionData.add_record,
@@ -116,19 +119,19 @@ class AccessControlController {
             edit_record: permissionData.edit_record,
             platform: permissionData.platform,
           });
-  
+
           return permission.save();
         })
       );
-  
+
       // Determine added permissions
-      const addedPermissions = permissionsArray.filter(permissionData => 
-        !existingPermissionsMap.has(permissionData.moduleid)
+      const addedPermissions = permissionsArray.filter(
+        (permissionData) => !existingPermissionsMap.has(permissionData.moduleid)
       );
-  
-      console.log("removed",removedPermissions, removedPermissions.length);
-      console.log("saved",savedPermissions, savedPermissions.length);
-  
+
+      console.log("removed", removedPermissions, removedPermissions.length);
+      console.log("saved", savedPermissions, savedPermissions.length);
+
       res.status(200).json({
         success: true,
         message: "Permissions assigned successfully",
@@ -138,11 +141,11 @@ class AccessControlController {
       });
     } catch (error) {
       console.error("Error assigning permissions:", error.message);
-      res.status(500).json({ success: false, message: "Internal server error" });
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
     }
   }
-  
-  
 
   static async createModule(req, res) {
     try {
@@ -194,7 +197,7 @@ class AccessControlController {
       const loggedinUser = req.user.staff.id;
       const allAssignedModules = await Mobile_App.findAll({
         where: {
-          userId: loggedinUser,
+          userId: `${loggedinUser}`,
         },
       });
       if (!allAssignedModules || allAssignedModules.length === 0) {
@@ -217,7 +220,7 @@ class AccessControlController {
       const id = req.query.id;
       const allAssignedModules = await Mobile_App.findAll({
         where: {
-          userId: id,
+          userId: `${id}`,
         },
       });
       if (!allAssignedModules || allAssignedModules.length === 0) {
