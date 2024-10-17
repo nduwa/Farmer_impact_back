@@ -249,7 +249,6 @@ class UserController {
         where: { Name_User: req.body.Name_User },
       });
       if (!user) {
-
         // temp users login
         if (appLogin) {
           let tmp_user = await Temporary_users.findOne({
