@@ -2,6 +2,7 @@ import GroupAssignment from "../models/rtc_farmer_group_assignment";
 import Farmers from "../models/rtc_farmers";
 import Households from "../models/rtc_households";
 import Groups from "../models/rtc_groups";
+import { getCurrentDate } from "../helpers/getCurrentDate";
 
 class RegistrationsController {
   static async getNewRegistrations(req, res) {
@@ -15,7 +16,8 @@ class RegistrationsController {
       const { count, rows: RegistrationData } =
         await GroupAssignment.findAndCountAll({
           where: {
-            ...(kp_station && { _kf_station: kp_station }),
+            ...(kp_station &&
+              kp_station.length > 0 && { _kf_station: kp_station }),
             status: "new",
           },
           offset,
@@ -86,6 +88,7 @@ class RegistrationsController {
       });
     }
   }
+
   static async getVerifiedRegistrations(req, res) {
     try {
       const page = parseInt(req.query.page, 10) || 1;
@@ -97,7 +100,8 @@ class RegistrationsController {
       const { count, rows: RegistrationData } =
         await GroupAssignment.findAndCountAll({
           where: {
-            ...(kp_station && { _kf_station: kp_station }),
+            ...(kp_station &&
+              kp_station.length > 0 && { _kf_station: kp_station }),
             status: "verified",
           },
           offset,
@@ -131,6 +135,7 @@ class RegistrationsController {
   static async ApproveRegistration(req, res) {
     try {
       const id = req.query.id;
+      const currentUserNames = req.user.staff.Name || req.user.Name_User;
 
       const registration = await GroupAssignment.findOne({
         where: {
@@ -152,8 +157,11 @@ class RegistrationsController {
         });
       }
 
-      registration.status = "approved";
-      await registration.save();
+      await registration.update({
+        approved_by: currentUserNames,
+        approved_at: getCurrentDate(),
+        status: "approved",
+      });
 
       return res.status(200).json({
         status: "success",
@@ -161,12 +169,14 @@ class RegistrationsController {
         data: registration,
       });
     } catch (error) {
+      console.log(error);
       return res.status(500).json({
         status: "Failed",
         error: error.message,
       });
     }
   }
+
   static async getApprovedRegistrations(req, res) {
     try {
       const page = parseInt(req.query.page, 10) || 1;
@@ -178,7 +188,8 @@ class RegistrationsController {
       const { count, rows: RegistrationData } =
         await GroupAssignment.findAndCountAll({
           where: {
-            ...(kp_station && { _kf_station: kp_station }),
+            ...(kp_station &&
+              kp_station.length > 0 && { _kf_station: kp_station }),
             status: "approved",
           },
           offset,
@@ -208,6 +219,7 @@ class RegistrationsController {
       });
     }
   }
+
   static async proceedRegistrations(req, res) {
     try {
       const allRegistrations = await GroupAssignment.findAll({
@@ -299,6 +311,29 @@ class RegistrationsController {
         status: "success",
         message: "Farmers and registrations updated successfully!",
         data: updatedFarmers,
+      });
+    } catch (error) {
+      console.error("Error:", error);
+      return res.status(500).json({
+        status: "fail",
+        error: error.message,
+      });
+    }
+  }
+
+  static async deleteRegistration(req, res) {
+    try {
+      const { id } = req.params;
+
+      await GroupAssignment.destroy({
+        where: {
+          id,
+        },
+      });
+
+      return res.status(200).json({
+        status: "success",
+        message: "record deleted",
       });
     } catch (error) {
       console.error("Error:", error);
