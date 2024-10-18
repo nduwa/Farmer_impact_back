@@ -39,7 +39,7 @@ class AccessControlController {
 
       const allAssignedModules = await Mobile_App.findAll({
         where: {
-          userId: loggedinUser,
+          userId: `${loggedinUser}`,
           platform: "mobile",
         },
       });
@@ -90,7 +90,7 @@ class AccessControlController {
       existingPermissions.forEach((permission) => {
         existingPermissionsMap.set(permission.moduleid, permission);
       });
-      
+
       // Determine removed permissions before deletion
       const removedPermissions = existingPermissions.filter(
         (permission) =>
@@ -197,7 +197,7 @@ class AccessControlController {
       const loggedinUser = req.user.staff.id;
       const allAssignedModules = await Mobile_App.findAll({
         where: {
-          userId: loggedinUser,
+          userId: `${loggedinUser}`,
         },
       });
       if (!allAssignedModules || allAssignedModules.length === 0) {
@@ -220,7 +220,7 @@ class AccessControlController {
       const id = req.query.id;
       const allAssignedModules = await Mobile_App.findAll({
         where: {
-          userId: id,
+          userId: `${id}`,
         },
       });
       if (!allAssignedModules || allAssignedModules.length === 0) {

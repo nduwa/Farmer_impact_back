@@ -1059,6 +1059,8 @@ class mobileSyncController {
           message: "insert to rtc_trees_survey failed",
         });
 
+      console.log("THE TREE DETAILS: ", treeDetails);
+
       // rtc_tree_details_survey
       const addDetails = await treeDetailsSurvey.bulkCreate(treeDetails);
 
