@@ -76,6 +76,15 @@ const GroupAssignment = sequelize.define("rtc_farmer_group_assignment", {
     type: DataTypes.ENUM("new", "verified", "approved", "deleted"),
     allowNull: false,
   },
+  approved_by: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  approved_at: {
+    type: DataTypes.DATE,
+    defaultValue: null,
+    allowNull: true,
+  },
   uploaded_at: {
     type: DataTypes.DATE,
     defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
