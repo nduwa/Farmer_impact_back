@@ -7,10 +7,18 @@ const householdTreesRoutes = express.Router();
 
 householdTreesRoutes.get("/allTrees", HouseholdTreeServey.getAllHouseholdTrees);
 householdTreesRoutes.get(
-  "/allTreessurvey",
-  HouseholdTreeServey.getAllTreeSurveys
+  "/allNewTreessurvey",
+  HouseholdTreeServey.getAllNewTreeSurveys
 );
-householdTreesRoutes.get("/allTreerecord", HouseholdTreeServey.insertRecord);
+householdTreesRoutes.get(
+  "/allApprovedTreessurvey",
+  HouseholdTreeServey.getAllApprovedTreeSurveys
+);
+householdTreesRoutes.get(
+  "/allVerifiedTreessurvey",
+  HouseholdTreeServey.getAllVerifiedTreeSurveys
+);
+// householdTreesRoutes.get("/allTreerecord", HouseholdTreeServey.insertRecord);
 householdTreesRoutes.get(
   "/treedetails",
   HouseholdTreeServey.getTreeSurveyDetails
