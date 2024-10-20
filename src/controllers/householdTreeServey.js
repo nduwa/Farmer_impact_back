@@ -89,6 +89,45 @@ class HouseholdTreeServey {
       });
     }
   }
+
+  static async deleteHouseholdTree(req, res) {
+    try {
+      const id = req.query.id;
+      // const station = req.user.staff._kf_Station;
+      // console.log("sfhjbffasfderfgerfser",req.user.staff)
+      const householdTree = await Trees_Survey.findOne({
+        where: { id: id },
+      });
+      if (!householdTree) {
+        return res.status(404).json({
+          status: "Failed",
+          message: "Household tree survey not found",
+        });
+      }
+
+      // if (householdTree._kf_Station !== station || "") {
+      //   return res.status(400).json({
+      //     status: "Fail",
+      //     message: "You can not delete trees which are not from your station",
+      //   });
+      // }
+
+      await householdTree.destroy();
+
+      return res.status(200).json({
+        status: "success",
+        message: "Household tree survey deleted successfully",
+      });
+    } catch (error) {
+      console.log("errr", error);
+      return res.status(500).json({
+        status: "Failed",
+        message: "Internal server error",
+        error: error.message,
+      });
+    }
+  }
+
   static async verifyHouseholdTree(req, res) {
     try {
       const id = req.query.id;

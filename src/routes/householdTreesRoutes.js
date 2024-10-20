@@ -39,5 +39,11 @@ householdTreesRoutes.put(
   verifyRole,
   HouseholdTreeServey.verifyHouseholdTree
 );
+householdTreesRoutes.delete(
+  "/delete",
+  //  verifyToken,
+  //  verifyRole,
+  HouseholdTreeServey.deleteHouseholdTree
+);
 
 export default householdTreesRoutes;
