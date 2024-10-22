@@ -17,7 +17,7 @@ const Mobile_App = sequelize.define("rtc_mobile_app_access_control", {
     allowNull: false,
   },
   userid: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.STRING,
     allowNull: false,
   },
   view_record: {

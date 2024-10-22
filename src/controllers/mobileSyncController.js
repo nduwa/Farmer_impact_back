@@ -29,6 +29,7 @@ import bucketing from "../models/bucketing";
 import transporter from "../database/mailConfig";
 import dotenv from "dotenv";
 import { Op, Sequelize } from "sequelize";
+import sequelize from "../database/connectDb";
 import { getCurrentDate } from "../helpers/getCurrentDate";
 
 dotenv.config();
@@ -99,7 +100,7 @@ class mobileSyncController {
       let allStations = [];
 
       const { userId } = req.params;
-      const { all = 1 } = req.query;
+      const { all = 0 } = req.query;
 
       const staffData = await staff.findOne({
         where: { _kf_User: userId },
@@ -419,6 +420,8 @@ class mobileSyncController {
   }
 
   static async submitInspection(req, res) {
+    const transaction = await sequelize.transaction();
+
     try {
       const inspectionData = req.body.inspection;
       const responses = req.body.responses;
@@ -450,17 +453,13 @@ class mobileSyncController {
 
       let uploadedDate = getCurrentDate();
 
-      const newInspection = await inspection.create({
-        ...inspectionData,
-        ...{ id: nextId, uploaded_at: uploadedDate },
-      });
-
-      if (!newInspection) {
-        return res.status(500).json({
-          status: "fail",
-          message: `inspections failed`,
-        });
-      }
+      const newInspection = await inspection.create(
+        {
+          ...inspectionData,
+          ...{ id: nextId, uploaded_at: uploadedDate },
+        },
+        { transaction }
+      );
 
       let lastResponseId = await inspections_responses.findOne({
         order: [["id", "DESC"]],
@@ -486,25 +485,13 @@ class mobileSyncController {
         processedResponses.push(tmpObj);
       }
 
-      const addedResponses = await inspections_responses.bulkCreate(
-        processedResponses
-      );
-
-      if (!addedResponses)
-        return res.status(500).json({
-          status: "fail",
-          message: `inspection done, responses failed`,
-        });
+      await inspections_responses.bulkCreate(processedResponses, {
+        transaction,
+      });
 
       const currentHousehold = await households.findOne({
         where: { __kp_Household: inspectionData._kf_Household },
       });
-
-      if (!currentHousehold)
-        return res.status(500).json({
-          status: "fail",
-          message: `responses done, household update failed`,
-        });
 
       const currentDate = new Date();
       const fourDigitYear = currentDate.getFullYear().toString().slice(-4);
@@ -518,17 +505,22 @@ class mobileSyncController {
         inspectionStatus: "Active",
       });
 
-      if (!updatedHoushold)
+      if (!updatedHoushold) {
+        await transaction.rollback();
         return res.status(500).json({
           status: "fail",
           message: `responses done, household update failed`,
         });
+      }
+
+      await transaction.commit();
 
       return res.status(200).json({
         status: "success",
         inspectionId: newInspection.id,
       });
     } catch (error) {
+      await transaction.rollback();
       console.log(error);
       return res.status(500).json({ status: "fail", error });
     }
@@ -605,36 +597,27 @@ class mobileSyncController {
         attendances.push(tmpObj);
       }
 
-      const addedAttendances = await training_attendance.bulkCreate(
-        attendances
-      );
+      await sequelize.transaction(async (t) => {
+        await training_attendance.bulkCreate(attendances, { transaction: t });
 
-      if (!addedAttendances)
-        return res.status(500).json({
-          status: "fail",
-          message: `attendance sessions failed`,
+        let lastSheetId = await training_attendance_sheet.findOne({
+          order: [["id", "DESC"]],
         });
 
-      let lastSheetId = await training_attendance_sheet.findOne({
-        order: [["id", "DESC"]],
+        let newSheetid = lastSheetId ? lastSheetId.id : 0;
+
+        await training_attendance_sheet.create(
+          {
+            id: newSheetid + 1,
+            created_at,
+            uuid,
+            filepath,
+            status: 1,
+            uploaded_at: getCurrentDate(),
+          },
+          { transaction: t }
+        );
       });
-
-      let newSheetid = lastSheetId ? lastSheetId.id : 0;
-
-      const addedAttendanceSheet = await training_attendance_sheet.create({
-        id: newSheetid + 1,
-        created_at,
-        uuid,
-        filepath,
-        status: 1,
-        uploaded_at: getCurrentDate(),
-      });
-
-      if (!addedAttendanceSheet)
-        return res.status(500).json({
-          status: "fail",
-          message: `attendance sessions done, sheets failed`,
-        });
 
       return res.status(200).json({
         status: "success",
@@ -1002,23 +985,13 @@ class mobileSyncController {
         coordinations.push(farmCoordinations);
       }
 
-      const addedCoordinates = await Farm_coordinates.bulkCreate(coordinates);
-
-      if (!addedCoordinates)
-        return res.status(500).json({
-          status: "fail",
-          message: "could not store to rtc_farm_coordinates",
+      await sequelize.transaction(async (t) => {
+        await Farm_coordinates.bulkCreate(coordinates, {
+          transaction: t,
         });
 
-      const addedCoordinations = await Farm_coordinations.bulkCreate(
-        coordinations
-      );
-
-      if (!addedCoordinations)
-        return res.status(500).json({
-          status: "fail",
-          message: "could not store to rtc_farm_coordinations",
-        });
+        await Farm_coordinations.bulkCreate(coordinations, { transaction: t });
+      });
 
       return res.status(200).json({
         status: "success",
@@ -1048,57 +1021,32 @@ class mobileSyncController {
         observationCourses,
       } = survey;
 
-      // rtc_trees_survey
       let { uploaded, ...cleanedTreeSurvey } = treeSurveyObj;
 
-      const addedSurvey = await treeSurvey.create(cleanedTreeSurvey);
-
-      if (!addedSurvey)
-        return res.status(500).json({
-          status: "fail",
-          message: "insert to rtc_trees_survey failed",
+      await sequelize.transaction(async (t) => {
+        // rtc_trees_survey
+        await treeSurvey.create(cleanedTreeSurvey, {
+          transaction: t,
         });
 
-      // rtc_tree_details_survey
-      const addDetails = await treeDetailsSurvey.bulkCreate(treeDetails);
+        // rtc_tree_details_survey
+        await treeDetailsSurvey.bulkCreate(treeDetails, { transaction: t });
 
-      if (!addDetails)
-        return res.status(500).json({
-          status: "fail",
-          message: "insert to rtc_trees_details_survey failed",
+        // rtc_pests_diseases_survey
+        await pestsDiseasesSurvey.bulkCreate(pestsAndDiseases, {
+          transaction: t,
         });
 
-      // rtc_pests_diseases_survey
-      const addedPestsDiseases = await pestsDiseasesSurvey.bulkCreate(
-        pestsAndDiseases
-      );
-
-      if (!addedPestsDiseases)
-        return res.status(500).json({
-          status: "fail",
-          message: "insert to rtc_pests_diseases_survey failed",
+        // rtc_observation_diseases_survey
+        await observationDiseasesSurvey.bulkCreate(observationPests, {
+          transaction: t,
         });
 
-      // rtc_observation_diseases_survey
-      const addedObservDiseases = await observationDiseasesSurvey.bulkCreate(
-        observationPests
-      );
-      if (!addedObservDiseases)
-        return res.status(500).json({
-          status: "fail",
-          message: "insert to rtc_observation_pests_survey failed",
+        // rtc_observation_courses_survey
+        await observationCoursesSurvey.bulkCreate(observationCourses, {
+          transaction: t,
         });
-
-      // rtc_observation_courses_survey
-      const addedObservCourses = await observationCoursesSurvey.bulkCreate(
-        observationCourses
-      );
-
-      if (!addedObservCourses)
-        return res.status(500).json({
-          status: "fail",
-          message: "insert to rtc_observation_courses_survey failed",
-        });
+      });
 
       return res.status(200).json({
         status: "success",
