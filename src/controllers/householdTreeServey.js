@@ -135,9 +135,11 @@ class HouseholdTreeServey {
   static async verifyHouseholdTree(req, res) {
     try {
       const id = req.query.id;
-      const station = req.user.staff._kf_Station;
+      const station = req.user?.staff?._kf_Station;
+
       const householdTree = await Trees_Survey.findOne({
         where: {
+          ...(station && station.length > 0 && { _kf_station: station }),
           id: id,
         },
       });
@@ -155,12 +157,17 @@ class HouseholdTreeServey {
           message: "Household tree is already verified",
         });
       }
-      if (householdTree._kf_Station !== station || "") {
-        return res.status(400).json({
-          status: "Fail",
-          message: "You can not approve trees which are not from your station",
-        });
+
+      if (station && station.length > 0) {
+        if (householdTree._kf_Station !== station) {
+          return res.status(400).json({
+            status: "Fail",
+            message:
+              "You can not approve trees which are not from your station",
+          });
+        }
       }
+
       householdTree.status = "verified";
       await householdTree.save();
 
