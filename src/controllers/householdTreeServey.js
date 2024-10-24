@@ -48,8 +48,12 @@ class HouseholdTreeServey {
     try {
       const id = req.query.id;
       const station = req.user.staff._kf_Station;
+      const kp_station = req.user?.staff?._kf_Station;
+
       const householdTree = await Trees_Survey.findOne({
         where: {
+          ...(kp_station &&
+            kp_station.length > 0 && { _kf_station: kp_station }),
           id: id,
         },
       });
@@ -315,13 +319,18 @@ class HouseholdTreeServey {
     try {
       const page = parseInt(req.query.page, 10) || 1;
       const pageSize = parseInt(req.query.pageSize, 10) || 100;
+      const kp_station = req.user?.staff?._kf_Station;
 
       const offset = (page - 1) * pageSize;
       const limit = pageSize;
 
       const { count, rows: allHouseholdTrees } =
         await Trees_Survey.findAndCountAll({
-          where: { status: "new" },
+          where: {
+            ...(kp_station &&
+              kp_station.length > 0 && { _kf_station: kp_station }),
+            status: "new",
+          },
           offset,
           limit,
         });
@@ -355,13 +364,18 @@ class HouseholdTreeServey {
     try {
       const page = parseInt(req.query.page, 10) || 1;
       const pageSize = parseInt(req.query.pageSize, 10) || 100;
+      const kp_station = req.user?.staff?._kf_Station;
 
       const offset = (page - 1) * pageSize;
       const limit = pageSize;
 
       const { count, rows: allHouseholdTrees } =
         await Trees_Survey.findAndCountAll({
-          where: { status: "Approved" },
+          where: {
+            ...(kp_station &&
+              kp_station.length > 0 && { _kf_station: kp_station }),
+            status: "Approved",
+          },
           offset,
           limit,
         });
@@ -395,13 +409,18 @@ class HouseholdTreeServey {
     try {
       const page = parseInt(req.query.page, 10) || 1;
       const pageSize = parseInt(req.query.pageSize, 10) || 100;
+      const kp_station = req.user?.staff?._kf_Station;
 
       const offset = (page - 1) * pageSize;
       const limit = pageSize;
 
       const { count, rows: allHouseholdTrees } =
         await Trees_Survey.findAndCountAll({
-          where: { status: "verified" },
+          where: {
+            ...(kp_station &&
+              kp_station.length > 0 && { _kf_station: kp_station }),
+            status: "verified",
+          },
           offset,
           limit,
         });
@@ -453,6 +472,7 @@ class HouseholdTreeServey {
   static async getTreeSurveysByDate(req, res) {
     try {
       const { startDate, endDate } = req.query;
+      const kp_station = req.user?.staff?._kf_Station;
 
       if (!startDate || !endDate) {
         return res.status(400).json({
@@ -470,6 +490,8 @@ class HouseholdTreeServey {
 
       const allHouseholdTrees = await Trees_Survey.findAll({
         where: {
+          ...(kp_station &&
+            kp_station.length > 0 && { _kf_station: kp_station }),
           created_at: {
             [Op.between]: [new Date(startDate), new Date(endDate)],
           },
